@@ -4,7 +4,7 @@ Source-of-truth catalog for Blaine's skill ecosystem. Mirrored to Confluence (Sk
 
 Last updated: 2026-06-12
 
-## cully-skills (this repo — `C:\Claude\cully-skills`)
+## sarges-skills (this repo — `C:\Claude\sarges-skills`)
 
 | Skill | Triggers | Replaces | Version |
 |---|---|---|---|
