@@ -1,0 +1,19 @@
+{
+  "name": "cully-skills",
+  "owner": {
+    "name": "Blaine Cully",
+    "email": "blaine.cully@gmail.com"
+  },
+  "metadata": {
+    "description": "Blaine's personal Claude Code skills — operational protocols migrated from the retired Master Prompt Hub.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "digitalnc-harvest",
+      "source": "./skills/digitalnc-harvest",
+      "description": "Harvest vintage public-domain newspaper pages and ads from DigitalNC and LOC Chronicling America for the Saspan Salt POD pipeline.",
+      "version": "1.0.0"
+    }
+  ]
+}

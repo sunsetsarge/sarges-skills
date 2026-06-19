@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+
+# This repo holds SKILLS ONLY — never harvested data, secrets, or model weights.
+# Operational data lives at D:\DigitalNC_Newspapers\ and D:\SaspanPipeline\, NOT here.
+*.jpg
+*.jp2
+*.pdf
+manifest.jsonl
+secrets/
+*.key
+*.pat
