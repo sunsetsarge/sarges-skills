@@ -10,8 +10,11 @@ Last updated: 2026-06-12
 |---|---|---|---|
 | `digitalnc-harvest` | saspan, digitalnc, chronam, chronicling america, loc.gov, iiif, vintage newspaper, ad extractor/reviewer/selector, ALTO OCR | APP-LL-024 | 1.0.0 |
 | `goal` | /goal, goal, finish line, autonomous, "work until done" | APP-LL-023 | 1.0.0 |
+| `anti-sycophancy` | CHALLENGE / STRESS TEST / PRE-COMMIT / STEELMAN; evaluative responses | APP-AS | 1.0.0 |
+| `chatgpt-desktop` | ask chatgpt, query chatgpt, generate image via chatgpt | — | 1.0.0 |
 
 Slash command: `commands/goal.md` → installed at `~/.claude/commands/goal.md` (`/goal <objective>`).
+Third-party installed skills are credited (not copied) in `third-party/CREDITS.md` — public repo is Option A: authored code + cited upstream links.
 
 ## anthropic-skills plugin (already installed — do NOT duplicate)
 

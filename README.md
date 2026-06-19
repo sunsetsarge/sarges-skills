@@ -27,14 +27,26 @@ Then it loads on next session and fires on its trigger keywords.
 2. Validate `.claude-plugin/marketplace.json` against the current Claude Code plugin docs (schema evolves — confirm before relying on it).
 3. Add to `~/.claude/settings.json` under `extraKnownMarketplaces`, like the 6 marketplaces already there.
 
-## Skills in this repo
+## Repository layout
 
-| Skill | Replaces (old Hub protocol) | Status |
+| Folder | Contents | License |
 |---|---|---|
-| `digitalnc-harvest` | APP-LL-024 Newspaper Harvest | ✅ authored |
-| `goal` (planned) | APP-LL-023 /goal | ⬜ next |
+| `skills/` | Skills **Blaine authored** — published as code | MIT (`LICENSE`) |
+| `commands/` | Slash commands (e.g. `/goal`) | MIT (`LICENSE`) |
+| `third-party/CREDITS.md` | Cited inventory of **installed third-party skills** — links to upstreams, **NOT** redistributed code | each upstream's own license |
 
-Most old Hub protocols did **not** become skills — they're already covered by the `anthropic-skills` plugin (3d-printing, comfyui, powershell, lego, project-session), or moved to hooks (relay check, file-org audit), scheduled tasks (index maintenance), or CLAUDE.md (anti-sycophancy defaults, versioning). See the Prompt-Tree Audit for the full mapping.
+### Authored skills (`skills/`)
+
+| Skill | Purpose | Replaces |
+|---|---|---|
+| `digitalnc-harvest` | Vintage newspaper/ad harvest (DigitalNC + LOC ChronAm) | APP-LL-024 |
+| `goal` | Autonomous objective pursuit with a verifiable finish line | APP-LL-023 |
+| `anti-sycophancy` | Case-against-first critique + CHALLENGE/STRESS/PRE-COMMIT/STEELMAN triggers | APP-AS |
+| `chatgpt-desktop` | Drive the ChatGPT desktop app (query / image-gen) — *published source-only; runtime screenshots excluded* | — |
+
+Third-party skills installed on the machine are **credited, not copied** (`third-party/CREDITS.md`). None shipped a LICENSE, so they're referenced by link rather than vendored — copying their code would risk their unstated terms.
+
+Most old Hub protocols did **not** become skills — they're covered by the `anthropic-skills` plugin (3d-printing, comfyui, powershell, lego, project-session), or moved to hooks (relay check, file-org audit), scheduled tasks (index maintenance), or CLAUDE.md (anti-sycophancy defaults, versioning). See the Prompt-Tree Audit for the full mapping.
 
 ## Conventions
 

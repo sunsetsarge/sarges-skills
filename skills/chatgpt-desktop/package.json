@@ -1,0 +1,20 @@
+{
+  "name": "chatgpt-desktop",
+  "version": "1.0.0",
+  "description": "Ask the ChatGPT Windows desktop app a question from Claude and read the reply, by driving the app (focus, type, screenshot, scroll-and-stitch).",
+  "main": "SKILL.md",
+  "keywords": [
+    "chatgpt",
+    "openai",
+    "desktop",
+    "automation",
+    "windows",
+    "bridge",
+    "screenshot"
+  ],
+  "license": "MIT",
+  "files": [
+    "SKILL.md",
+    "scripts/"
+  ]
+}
