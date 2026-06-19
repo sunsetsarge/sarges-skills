@@ -9,7 +9,9 @@ Last updated: 2026-06-12
 | Skill | Triggers | Replaces | Version |
 |---|---|---|---|
 | `digitalnc-harvest` | saspan, digitalnc, chronam, chronicling america, loc.gov, iiif, vintage newspaper, ad extractor/reviewer/selector, ALTO OCR | APP-LL-024 | 1.0.0 |
-| `goal` *(planned)* | /goal, goal, finish line, autonomous | APP-LL-023 | — |
+| `goal` | /goal, goal, finish line, autonomous, "work until done" | APP-LL-023 | 1.0.0 |
+
+Slash command: `commands/goal.md` → installed at `~/.claude/commands/goal.md` (`/goal <objective>`).
 
 ## anthropic-skills plugin (already installed — do NOT duplicate)
 
