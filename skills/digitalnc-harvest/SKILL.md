@@ -8,6 +8,10 @@ description: Harvest vintage public-domain newspaper pages and advertisements fr
 
 Sources public-domain vintage newspaper pages, extracts advertisements, and feeds them into the Saspan Salt POD pipeline. This skill **wraps existing, validated scripts** — its job is to run them correctly and avoid the failures already discovered, not to reimplement them.
 
+## Operational config
+
+Paths, the Python interpreter, and run defaults live in **`config.json`** (next to this file) — the single source of truth for *where things are*. Read it to construct commands; edit **it** (not this doc or the contract-tested scripts) to relocate paths or change defaults (`source` / `iiif_width` / `pd_cap_year`). The table below is human reference.
+
 ## ⛔ DO NOT REBUILD — existing scripts (validated, contract-tested)
 
 | Script | Location | Purpose |

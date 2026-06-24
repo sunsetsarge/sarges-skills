@@ -1,0 +1,16 @@
+{
+  "_note": "Operational paths + run defaults for the digitalnc-harvest skill. Read this to construct commands; edit IT (not this skill's doc or the contract-tested downloaders) to relocate paths or change defaults. Script-internal tunables (retry backoff, 4s polite delay) live inside the downloaders themselves — do NOT duplicate them here.",
+  "python": "C:\\AI-Shared\\python.exe",
+  "scripts": {
+    "digitalnc_dl": "D:\\DigitalNC_Newspapers\\digitalnc_dl.py",
+    "chronam_dl": "D:\\Claude Projects\\Saspan Salt Vintage Prints\\chronam_dl.py",
+    "ad_extractor": "C:\\Claude\\Scripts\\Python\\ad_extractor.py"
+  },
+  "output_root": "D:\\DigitalNC_Newspapers",
+  "saspan_pipeline": "D:\\SaspanPipeline",
+  "defaults": {
+    "source": "digitalnc",
+    "iiif_width": 4000,
+    "pd_cap_year": 1927
+  }
+}

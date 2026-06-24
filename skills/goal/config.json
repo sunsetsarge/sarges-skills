@@ -1,0 +1,16 @@
+{
+  "_note": "Default operating config for the /goal skill. safety_caps are STARTING defaults — tune to taste; any goal may override per run. scope_fence MUST be set per goal (never run unbounded). model_tiers follow the CLAUDE.md model-tiering table.",
+  "safety_caps": {
+    "iteration_cap": 20,
+    "no_progress_cap": 3,
+    "budget_tokens": 200000,
+    "time_box_minutes": 60,
+    "scope_fence": []
+  },
+  "model_tiers": {
+    "conductor": "opus-or-fable",
+    "implementation": "sonnet",
+    "triage_and_verification": "haiku",
+    "bulk_bounded_work": "local (LM Studio / Ollama, $0)"
+  }
+}

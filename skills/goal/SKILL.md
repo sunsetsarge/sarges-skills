@@ -40,6 +40,8 @@ Always back the goal with a TaskCreate ledger so progress is visible and the run
 
 ## 4. Safety caps (encode every time — this is where autonomy earns trust)
 
+Load defaults from `config.json` (`safety_caps`) at goal start and override per run; **`scope_fence` must be set each time**. Model-tier defaults are in `config.json` (`model_tiers`).
+
 - **Iteration cap** — max N rounds; halt and report at N even if incomplete.
 - **No-progress cap** — K consecutive rounds with no measurable progress → halt and report why.
 - **Budget cap** — set a token/cost ceiling (Workflow `budget`); stop when reached.
