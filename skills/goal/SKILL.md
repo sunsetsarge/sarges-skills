@@ -1,5 +1,6 @@
 ---
 name: goal
+argument-hint: "<objective> with a verifiable finish line"
 description: Pursue a high-level objective autonomously across many steps until a verifiable finish-line condition is met, with hard safety caps and resumable state. Use when the user invokes /goal, or says "keep going until", "work autonomously until done", "finish line", "autonomous mode", "slash goal", or hands off a multi-step objective to complete without step-by-step supervision. Maps the objective onto native primitives (Workflow, /loop, /schedule, TaskCreate, subagent model routing) and separates the judge-of-done from the doer to prevent premature victory.
 ---
 

@@ -1,5 +1,6 @@
 ---
 name: digitalnc-harvest
+argument-hint: "<lccn> [--start YYYY] [--end YYYY] [--source digitalnc|chronam] [--ocr]"
 description: Harvest vintage public-domain newspaper pages and advertisements from DigitalNC and the LOC Chronicling America API for the Saspan Salt print-on-demand pipeline. Use whenever the user mentions saspan, digitalnc, chronam, chronicling america, loc.gov, IIIF newspaper download, vintage newspaper ads, ALTO OCR, newspaper harvest, or the ad extractor / ad reviewer / ad selector pipeline. Wraps the validated digitalnc_dl.py and chronam_dl.py downloaders plus the existing extraction pipeline — DO NOT rebuild these from scratch.
 ---
 
@@ -85,6 +86,20 @@ Additive optional: `source:"loc-chronam"` (chronam), `ocr_ok:true|false` (digita
 - **Skip-if-exists** on every download (resume-safe).
 - **PD hard cap 1927** (`end_year` clamps server-side) — belt-and-suspenders for public-domain scope.
 - `info` command: use `at=results,pagination`, fetch 1 result, read `pagination.total` — never paginate a 6,000-issue title client-side.
+
+## Harvest verification (Pass / Fail) — verification component
+
+After a harvest, judge the run objectively instead of eyeballing it. **PASS** only if all hold; otherwise **FAIL** and list which failed:
+
+1. **Count** — `manifest.jsonl` row count == expected pages (expected = `canvases[]` length from the issue manifest, or `pagination.total` for a title/date range).
+2. **All ok** — every manifest row has `ok=true` (report any `ok=false` page + reason).
+3. **No thumbnail trap** — zero output `.jpg` files < 100 KB (a tiny file = IIIF URL still at `pct:6.25`; see Gotchas).
+4. **No gaps** — `seq-1..N` contiguous; no missing page numbers.
+5. **Full-res** — spot-check `.jpg` width ≈ 4000 px (Pillow `Image.open(...).size`).
+
+Output: `PASS — {N}/{N} pages ok, 0 undersized, no gaps` or `FAIL: {reasons}`. Reads existing artifacts only — no re-download.
+
+This is the same condition [[goal]] uses as a harvest finish line ("manifest.jsonl has N rows ok=true"), so the verifier doubles as the stop-check for an autonomous harvest.
 
 ## Gotchas table
 

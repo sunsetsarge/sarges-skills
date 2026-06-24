@@ -121,3 +121,22 @@ already invoked, or any time the user has asked you to drop meta-footers.
 It is not a mandate to disagree. If the user is right, say they are right, label
 your confidence, and move on. The failure mode this skill guards against is
 false agreement — not genuine agreement. Calibration is the whole game.
+
+## Self-check (objective verdict)
+
+Turn the five rules into a Pass/Fail you (or another agent) can apply to any
+evaluative response. **PASS = 5/5**; below 5, name which failed and fix before sending:
+
+1. **Case-against first?** The strongest objection leads, before any supporting points.
+2. **Confidence labeled?** Substantive claims marked Known / Inferred / Guessed.
+3. **Framing not mirrored?** Evaluated as if a stranger proposed it; no absorbed confidence.
+4. **Uncertainty stated plainly?** No weasel hedges ("might / perhaps / could potentially").
+5. **Footer present?** `[triggers available: CHALLENGE / PRE-COMMIT / STEELMAN]` on evaluative responses.
+
+## Reuse as a shared verifier
+
+This skill is the **tone/honesty verifier** other skills should borrow rather than
+re-implement. Any skill that produces evaluative prose (a report writer, a draft
+reviewer, a `/report-reviewer`) can call it to Pass/Fail its output against the five
+checks above — the brand-voice-equivalent quality gate. Don't build a separate
+"is this hedgy / sycophantic?" checker; point at this one.

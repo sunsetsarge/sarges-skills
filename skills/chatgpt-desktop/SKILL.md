@@ -1,6 +1,7 @@
 ---
 name: chatgpt-desktop
-description: Ask the ChatGPT desktop app a question and read the reply, OR generate an image with ChatGPT and save it as a full-resolution PNG, by driving the Windows app (focus, type, screenshot, copy-image). Use when the user wants Claude to query ChatGPT, get a second opinion, relay a prompt, or generate/create/make an image or picture via ChatGPT (DALL-E / GPT image). Windows-only; the ChatGPT desktop app must be installed and logged in.
+argument-hint: "<question | image prompt> [--new] [--full] [--out PATH] [--raw]"
+description: Ask the ChatGPT desktop app a question and read the reply, OR generate an image with ChatGPT/DALL-E and save it as a full-resolution PNG, by driving the Windows app (focus, type, screenshot, copy-image). Use ONLY when the user explicitly names ChatGPT — e.g. "ask ChatGPT", "what does ChatGPT say", "get a second opinion from ChatGPT", "relay this to ChatGPT", or "make an image with ChatGPT/DALL-E". Do NOT trigger for generic image generation (route plain "make an image / picture" requests to ComfyUI, Stability, or Adobe) or for general questions Claude can answer directly. Windows-only; the ChatGPT desktop app must be installed and logged in.
 ---
 
 # ChatGPT Desktop (Windows) Skill
@@ -12,6 +13,10 @@ and screenshot it. Claude reads the screenshot.
 
 > Built as the Windows-native replacement for the macOS-only `claude-chatgpt-mcp` MCP,
 > which can't run on Windows (it uses AppleScript).
+
+## Gotchas
+
+- **Do not trigger for generic image generation.** This skill is only for when the user explicitly wants **ChatGPT / DALL-E** (or a ChatGPT "second opinion"). Plain "make an image / picture" requests should route to ComfyUI, Stability, or Adobe — not here. Fire only on an explicit ChatGPT mention.
 
 ## Requirements
 
