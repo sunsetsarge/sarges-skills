@@ -23,3 +23,7 @@ manifest.jsonl
 secrets/
 *.key
 *.pat
+
+# chatgpt-desktop writes runtime screenshots next to its scripts;
+# the live install is a junction into this repo, so keep them out of git
+skills/chatgpt-desktop/scripts/*.png
