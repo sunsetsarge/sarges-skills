@@ -2,7 +2,7 @@
 
 Source-of-truth catalog for Blaine's skill ecosystem. Mirrored to Confluence (Skills Catalog page) for human browsing. This file is the canonical copy; regenerate the Confluence page from it, never the reverse.
 
-Last updated: 2026-06-12
+Last updated: 2026-07-03
 
 ## sarges-skills (this repo — `C:\Claude\sarges-skills`)
 
@@ -13,6 +13,8 @@ Last updated: 2026-06-12
 | `anti-sycophancy` | CHALLENGE / STRESS TEST / PRE-COMMIT / STEELMAN; evaluative responses | APP-AS | 1.0.0 |
 | `chatgpt-desktop` | ask chatgpt, query chatgpt, generate image via chatgpt | — | 1.0.0 |
 | `browser-game-builder` | build/clone/finish a browser·HTML5·canvas game, RTS/tower-defense/top-down shooter, add units·sprites·factions·game sfx·balance, 8-dir sprite facing | — | 1.0.0 |
+| `vintage-ad-generator` | create original vintage/period ad artwork, heritage/nostalgia tee, Local Lore town ad, "fake old newspaper ad", vintage art "looks too AI" | — | 1.0.0 |
+| `workspace-audit` | run an audit, audit my workspace/setup, check for drift, Audit N, /workspace-audit | — | 1.0.0 |
 
 Slash command: `commands/goal.md` → installed at `~/.claude/commands/goal.md` (`/goal <objective>`).
 Third-party installed skills are credited (not copied) in `third-party/CREDITS.md` — public repo is Option A: authored code + cited upstream links.
@@ -33,7 +35,7 @@ Third-party installed skills are credited (not copied) in `third-party/CREDITS.m
 
 ## Installed standalone skills (~/.claude/skills)
 
-anti-sycophancy (APP-AS triggers), adhd-assistant, ollama-local, bambu-print, chatgpt-desktop, drawio-skill, stock-analysis, office365-connector, home-assistant-agent-secure, web-mcp, mcp-workflow, ralph, goodreads, local-places, google-web-search, windows-control, 3d-ai-studio-api, meshy-3d-generation, meshy-3d-printing, youtube-* (consolidation pending), voice-email (stub — delete), general-writing (broken — fix/delete).
+All sarges-skills entries above are junctions into this repo (anti-sycophancy + chatgpt-desktop re-junctioned 2026-07-03, Audit 8 fix). Remaining third-party installs — marketplace junctions to `~\.agents\skills\`, plus a few loose dirs (drawio-skill, 3d-ai-studio-api, meshy-*): adhd-assistant, ollama-local, bambu-print, drawio-skill, stock-analysis, office365-connector, home-assistant-agent-secure, web-mcp, mcp-workflow, ralph, goodreads, local-places, google-web-search, windows-control, 3d-ai-studio-api, meshy-3d-generation, meshy-3d-printing, youtube-* (consolidation pending), voice-email (stub — delete), general-writing (broken — fix/delete).
 
 ## NOT skills (correct home is elsewhere)
 
