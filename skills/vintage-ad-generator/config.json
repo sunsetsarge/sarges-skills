@@ -1,0 +1,21 @@
+{
+  "_note": "Operational paths + model defaults for the vintage-ad-generator skill. Read this to construct commands; edit IT (not the SKILL.md doc) to relocate paths or change generation defaults.",
+  "comfyui_path": "C:\\ComfyUI",
+  "comfyui_python": "C:\\ComfyUI\\.venv\\Scripts\\python.exe",
+  "comfyui_url": "http://127.0.0.1:8188",
+  "comfyui_launch": ".\\.venv\\Scripts\\python.exe main.py --highvram --fast --fp16-vae",
+  "output_dir": "C:\\ComfyUI\\output",
+  "project_dir": "C:\\Users\\blain\\OneDrive\\Documents\\Claude\\Projects\\Local_Image_Gen",
+  "composite_script": "scripts/make_tee_mock.py",
+  "corpus_ad_crops": "D:\\DigitalNC_Newspapers\\BrunswickCounty_pre1970\\_ad_crops",
+  "defaults": {
+    "checkpoint": "dreamshaper_8.safetensors",
+    "width": 512,
+    "height": 768,
+    "steps": 30,
+    "cfg": 7,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "batch": 4
+  }
+}
