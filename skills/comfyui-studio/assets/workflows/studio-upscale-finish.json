@@ -1,0 +1,7 @@
+{
+  "1": { "class_type": "LoadImage", "_meta": {"title": "Load Source Image (stage via stage_output_as_input first)"}, "inputs": { "image": "studio_t1_00001_.png" }},
+  "2": { "class_type": "UpscaleModelLoader", "_meta": {"title": "Load 4x-UltraSharp"}, "inputs": { "model_name": "4x-UltraSharp.pth" }},
+  "3": { "class_type": "ImageUpscaleWithModel", "_meta": {"title": "Upscale 4x"}, "inputs": { "upscale_model": ["2", 0], "image": ["1", 0] }},
+  "4": { "class_type": "ImageScaleBy", "_meta": {"title": "Downscale 0.5 (net 2x clean)"}, "inputs": { "image": ["3", 0], "upscale_method": "lanczos", "scale_by": 0.5 }},
+  "5": { "class_type": "SaveImage", "_meta": {"title": "Save Image"}, "inputs": { "images": ["4", 0], "filename_prefix": "studio_t4" }}
+}

@@ -1,0 +1,18 @@
+{
+  "_license_note_": "Flux 2 Klein: NON-COMMERCIAL license. Draft/iteration use only — do not use outputs in commercial products.",
+  "1": { "class_type": "UnetLoaderGGUF", "_meta": {"title": "Load Flux 2 Klein 9B GGUF UNET"}, "inputs": { "unet_name": "flux-2-klein-9b-Q4_K_M.gguf" }},
+  "2": { "class_type": "CLIPLoader", "_meta": {"title": "Load Qwen3-8B Text Encoder (type=flux2)"}, "inputs": { "clip_name": "qwen_3_8b_fp4mixed.safetensors", "type": "flux2" }},
+  "3": { "class_type": "VAELoader", "_meta": {"title": "Load Flux 2 VAE"}, "inputs": { "vae_name": "flux2-vae.safetensors" }},
+  "4": { "class_type": "CLIPTextEncode", "_meta": {"title": "Positive Prompt"}, "inputs": { "clip": ["2", 0], "text": "A busy street market at golden hour with exactly three vendors: an older woman in a red apron selling oranges on the left, a bearded man in a blue jacket grilling meat skewers in the center, and a teenage girl in a yellow raincoat selling flowers on the right. Warm low sunlight, long shadows, photorealistic, shot on a 35mm lens." }},
+  "5": { "class_type": "ConditioningZeroOut", "_meta": {"title": "Negative (ZeroOut)"}, "inputs": { "conditioning": ["4", 0] }},
+  "6": { "class_type": "EmptyLatentImage", "_meta": {"title": "Empty Latent 1024x1024"}, "inputs": { "width": 1024, "height": 1024, "batch_size": 1 }},
+  "7": { "class_type": "KSampler", "_meta": {"title": "KSampler Draft (4/1.0/euler/simple)"}, "inputs": {
+    "model": ["1", 0],
+    "positive": ["4", 0],
+    "negative": ["5", 0],
+    "latent_image": ["6", 0],
+    "seed": 42, "steps": 4, "cfg": 1.0, "sampler_name": "euler", "scheduler": "simple", "denoise": 1
+  }},
+  "8": { "class_type": "VAEDecode", "_meta": {"title": "VAE Decode"}, "inputs": { "samples": ["7", 0], "vae": ["3", 0] }},
+  "9": { "class_type": "SaveImage", "_meta": {"title": "Save Image"}, "inputs": { "images": ["8", 0], "filename_prefix": "studio_t5" }}
+}
