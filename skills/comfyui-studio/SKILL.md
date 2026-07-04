@@ -36,7 +36,13 @@ personal use only.
 
 1. **Expand the prompt first.** Read `references/prompt-engine.md` and rewrite the user's ask into
    3–8 structured natural-language sentences (subject+counts, layout, lighting, style, camera, mood,
-   quoted in-image text). This step is most of the quality gap — never skip it.
+   quoted in-image text). This step is most of the quality gap — never skip it. If expansion invents
+   content the user didn't ask for (extra copy like a date line, a specific style era), mention the
+   additions when presenting the result so they can be dropped.
+   **Resolutions:** templates ship at their verified native sizes (Qwen 1328×1328; Z-Image/klein
+   1024×1024). Both families support other ~same-megapixel aspect ratios — Qwen: 1104×1472 (3:4),
+   1472×1104, 1664×928 (16:9), 928×1664; Z-Image: 896×1152, 1152×896, 1344×768 (÷16). For a poster,
+   prefer portrait 3:4.
 2. **Pick the row** from the table above. In-image text → Qwen. Otherwise Z-Image default.
 3. **Load the template** from `assets/workflows/`, swap the prompt (and seed), enqueue via the
    comfyui MCP (`enqueue_workflow`), and **verify via `get_history`** — never trust the submit
@@ -52,8 +58,15 @@ personal use only.
 - **Edit path:** `stage_output_as_input` on the chosen output → its filename goes into the
   `LoadImage` node of `studio-edit-qwen2511.json` → one plain-English instruction per pass
   ("Make it night; the market is lit by string lights"). Chain passes: stage the new output, edit again.
+- **Edit output size gotcha:** the edit template's output resolution comes from its
+  `EmptyLatentImage` node (shipped at 1024×1024), NOT from the loaded source image. Before an edit
+  pass, set that node's width/height to the source image's dimensions (÷ aspect-preserving) or the
+  edit silently downsizes your 1328² poster to 1024².
 - **Seeds:** hold the seed fixed to iterate on one composition (fixed 42 in all templates);
-  randomize (or bump) to explore. `disable_random_seed` matters when enqueuing via MCP.
+  randomize (or bump) to explore. When enqueuing via the MCP, pass `disable_random_seed: true` —
+  otherwise `enqueue_workflow` randomizes seeds by default and "iterate on the same composition" quietly breaks.
+- **Two-step verify:** `get_history` only proves the job completed; a solid-black failed VAE decode
+  still "succeeds". `view_image` (or reading the PNG) is the actual quality gate — always do both.
 - **Upscale last**, after content is final: `studio-upscale-finish.json`.
 
 ## Quality checklist (definition of done, per image)
