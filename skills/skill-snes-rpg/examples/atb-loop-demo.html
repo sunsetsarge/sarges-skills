@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ATB Loop Demo — skill-snes-rpg</title>
+<style>
+  html,body{margin:0;background:#10141f;color:#f0f0e8;font-family:monospace;
+    display:flex;flex-direction:column;align-items:center}
+  h1{font-size:14px;font-weight:normal;color:#5b6ee1;margin:10px 0 4px}
+  p{font-size:11px;color:#8890a8;margin:0 0 8px}
+  canvas{image-rendering:pixelated;border:2px solid #2a2f4e}
+</style>
+</head>
+<body>
+<h1>ATB LOOP DEMO — Wait-mode gauges, FIFO queue, dead-actor validation</h1>
+<p>Arrows = move cursor &nbsp; Z/Enter = confirm &nbsp; X = cancel &nbsp; (click once to enable sound)</p>
+<canvas id="cv" width="480" height="300"></canvas>
+<script>
+"use strict";
+// ---------- data (inline stand-ins for characters.json / enemies.json) ----------
+const PAL = { bg:"#10141f", win:"#1c2138", win2:"#2a2f4e", edge:"#5b6ee1",
+  text:"#f0f0e8", dim:"#8890a8", hp:"#6ecb63", mp:"#5b9be1", atb:"#e1c05b",
+  ready:"#f4f4a0", enemy:"#c85050", dmg:"#ffffff", heal:"#8df08d", dead:"#555a70" };
+
+const READY = 100, ATB_RATE = 0.55;
+
+function mk(name, side, hp, mp, atk, def, spd, color){
+  return { name, side, hp, maxHp:hp, mp, maxMp:mp, atk, def, spd, color,
+           atb: Math.random()*40, ready:false, alive:true, defending:false, flashT:0 };
+}
+const party = [
+  mk("Brannic","party", 96, 8, 16, 10, 38, "#8a4b2d"),
+  mk("Sela",  "party", 62, 24, 9,  6, 55, "#3866c8"),
+  mk("Odo",   "party", 74, 12, 12, 8, 46, "#4b8a5a"),
+];
+const foes = [
+  mk("Cinder Husk","enemy", 150, 0, 13, 6, 40, "#c85050"),
+  mk("Marsh Creep","enemy", 110, 0, 10, 4, 52, "#7a50c8"),
+];
+const combatants = [...party, ...foes];
+const skills = { // per-character "signature" stand-ins
+  "Brannic": { name:"Bulwark",  self:true,  msg:"braces for the party!" },
+  "Sela":    { name:"FateWheel",self:false, msg:"spins the wheel!" },
+  "Odo":     { name:"Pilfer",   self:false, msg:"rifles the enemy!" },
+};
+
+// ---------- battle state machine ----------
+let battleState = "TICKING"; // TICKING | MENU_OPEN | RESOLVING | VICTORY | DEFEAT
+const readyQueue = [];
+let menu = null;             // {actor, mode:"command"|"target", idx, cmds}
+let msg = "Battle start!", msgT = 2000;
+const floaters = [];         // {x,y,txt,color,t}
+
+function livingFoes(){ return foes.filter(c=>c.alive); }
+function livingParty(){ return party.filter(c=>c.alive); }
+
+// ---------- ATB tick (RULE 1: fill ONLY in TICKING) ----------
+function tickATB(dt){
+  if (battleState !== "TICKING") return;
+  for (const c of combatants){
+    if (!c.alive || c.ready) continue;
+    c.atb = Math.min(c.atb + c.spd * ATB_RATE * dt/16.67, READY); // RULE 5: clamp
+    if (c.atb >= READY){ c.ready = true; readyQueue.push(c); }
+  }
+  const actor = readyQueue.shift();
+  if (!actor) return;
+  if (!actor.alive){ actor.ready=false; actor.atb=0; return; } // died while queued
+  if (actor.side === "party"){
+    battleState = "MENU_OPEN";
+    menu = { actor, mode:"command", idx:0,
+             cmds:["Fight", skills[actor.name].name, "Defend"] };
+    sfx.blip();
+  } else {
+    enemyAct(actor);
+  }
+}
+
+// ---------- action resolution (one at a time — RULE 3) ----------
+function resolve(actor, kind, target){
+  battleState = "RESOLVING";
+  menu = null;
+  // RULE 2: validate at execution time
+  if (!actor.alive){ endAction(actor); return; }
+  if (target && !target.alive){
+    const pool = actor.side==="party" ? livingFoes() : livingParty();
+    if (!pool.length){ endAction(actor); return; }
+    target = pool[Math.floor(Math.random()*pool.length)]; // retarget
+  }
+  actor.defending = false;
+  setTimeout(()=>{ // stands in for the attack animation
+    if (kind === "fight" || kind === "skill"){
+      const mult = kind==="skill" ? 1.6 : 1.0;
+      let dmg = Math.max(1, Math.floor((actor.atk*2*mult - target.def*1.5)
+                * (0.9 + Math.random()*0.2)));
+      if (target.defending) dmg = Math.floor(dmg/2);
+      target.hp = Math.max(0, target.hp - dmg);
+      target.flashT = 250;
+      addFloater(target, "-"+dmg, PAL.dmg);
+      sfx.hit();
+      if (target.hp === 0){ target.alive = false; target.ready = false;
+        setMsg(target.name + " falls!"); }
+      else if (kind === "skill") setMsg(actor.name + " " + (skills[actor.name]?skills[actor.name].msg:"strikes!"));
+      else setMsg(actor.name + " attacks " + target.name + "!");
+    } else if (kind === "defend"){
+      actor.defending = true;
+      setMsg(actor.name + " defends.");
+      sfx.confirm();
+    } else if (kind === "guard"){
+      actor.defending = true;
+      setMsg(actor.name + " " + skills[actor.name].msg);
+      sfx.confirm();
+    }
+    setTimeout(()=>endAction(actor), 350);
+  }, 250);
+}
+
+function endAction(actor){
+  actor.atb = 0; actor.ready = false;
+  // RULE 4: victory/defeat only at action boundaries
+  if (!livingFoes().length){ battleState = "VICTORY"; setMsg("Victory!"); sfx.fanfare(); return; }
+  if (!livingParty().length){ battleState = "DEFEAT"; setMsg("The party has fallen..."); return; }
+  battleState = "TICKING";
+}
+
+function enemyAct(actor){
+  // scripted-table stand-in: 3:1 weight attack vs "fierce" attack
+  const kind = Math.random() < 0.75 ? "fight" : "skill";
+  const pool = livingParty();
+  if (!pool.length){ endAction(actor); return; }
+  resolve(actor, kind, pool[Math.floor(Math.random()*pool.length)]);
+}
+
+function setMsg(t){ msg = t; msgT = 1800; }
+function addFloater(c, txt, color){
+  const p = pos(c); floaters.push({x:p.x+18, y:p.y-6, txt, color, t:900});
+}
+
+// ---------- input (RULE 19: key-down edges only) ----------
+const edges = {};
+addEventListener("keydown", e=>{
+  if (e.repeat) return;
+  edges[e.key] = true;
+  if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key)) e.preventDefault();
+});
+function pressed(k){ const v = edges[k]; edges[k] = false; return !!v; }
+
+function handleMenu(){
+  if (battleState !== "MENU_OPEN" || !menu) return;
+  const confirm = pressed("z")||pressed("Z")||pressed("Enter");
+  const cancel  = pressed("x")||pressed("X");
+  if (menu.mode === "command"){
+    if (pressed("ArrowUp"))   { menu.idx = (menu.idx+menu.cmds.length-1)%menu.cmds.length; sfx.blip(); }
+    if (pressed("ArrowDown")) { menu.idx = (menu.idx+1)%menu.cmds.length; sfx.blip(); }
+    if (confirm){
+      sfx.confirm();
+      if (menu.idx === 2){ resolve(menu.actor, "defend", null); return; }
+      if (menu.idx === 1 && skills[menu.actor.name].self){ resolve(menu.actor, "guard", null); return; }
+      menu.mode = "target"; menu.kind = menu.idx===0 ? "fight" : "skill";
+      menu.tIdx = 0;
+    }
+  } else { // target selection among living foes
+    const pool = livingFoes();
+    if (!pool.length){ menu.mode = "command"; return; }
+    if (pressed("ArrowUp"))   { menu.tIdx = (menu.tIdx+pool.length-1)%pool.length; sfx.blip(); }
+    if (pressed("ArrowDown")) { menu.tIdx = (menu.tIdx+1)%pool.length; sfx.blip(); }
+    if (cancel){ menu.mode = "command"; sfx.cancel(); return; }
+    if (confirm){ sfx.confirm(); resolve(menu.actor, menu.kind, pool[menu.tIdx]); }
+  }
+}
+
+// ---------- audio: synthesized, lazy AudioContext ----------
+const sfx = (()=>{
+  let ac = null;
+  function ctx(){ if(!ac) ac = new (window.AudioContext||window.webkitAudioContext)();
+                  if (ac.state==="suspended") ac.resume(); return ac; }
+  addEventListener("pointerdown", ctx, {once:true});
+  addEventListener("keydown", ctx, {once:true});
+  function tone(freq, dur, type, vol, slideTo){
+    try{
+      const a = ctx(), t = a.currentTime;
+      const o = a.createOscillator(), g = a.createGain();
+      o.type = type; o.frequency.setValueAtTime(freq, t);
+      if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t+dur);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(vol, t+0.005);
+      g.gain.linearRampToValueAtTime(0, t+dur);
+      o.connect(g).connect(a.destination);
+      o.start(t); o.stop(t+dur+0.02);
+    }catch(e){/* audio unavailable — demo still runs silent */}
+  }
+  return {
+    blip:    ()=>tone(880, 0.05, "square",   0.12),
+    confirm: ()=>{tone(660,0.05,"square",0.12); setTimeout(()=>tone(990,0.07,"square",0.12),50);},
+    cancel:  ()=>tone(440, 0.09, "square",   0.12, 330),
+    hit:     ()=>{tone(110,0.09,"triangle",0.3); tone(200,0.05,"sawtooth",0.1,60);},
+    fanfare: ()=>{[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,0.16,"square",0.15), i*130));},
+  };
+})();
+
+// ---------- rendering ----------
+const cv = document.getElementById("cv"), ctx2 = cv.getContext("2d");
+function pos(c){
+  const i = (c.side==="party"?party:foes).indexOf(c);
+  return c.side==="party" ? {x:330, y:40+i*52} : {x:60, y:56+i*70};
+}
+function win(x,y,w,h){
+  ctx2.fillStyle = PAL.win; ctx2.fillRect(x,y,w,h);
+  ctx2.strokeStyle = PAL.edge; ctx2.lineWidth = 2; ctx2.strokeRect(x+1,y+1,w-2,h-2);
+}
+function bar(x,y,w,frac,color){
+  ctx2.fillStyle = PAL.win2; ctx2.fillRect(x,y,w,6);
+  ctx2.fillStyle = color; ctx2.fillRect(x,y,Math.round(w*Math.max(0,Math.min(1,frac))),6);
+}
+function draw(dt){
+  ctx2.fillStyle = PAL.bg; ctx2.fillRect(0,0,480,300);
+  ctx2.font = "12px monospace"; ctx2.textBaseline = "top";
+  // combat sprites (vector fallback style)
+  for (const c of combatants){
+    const p = pos(c);
+    if (c.flashT>0) c.flashT -= dt;
+    ctx2.fillStyle = !c.alive ? PAL.dead : (c.flashT>0 && Math.floor(c.flashT/60)%2===0) ? "#ffffff" : c.color;
+    if (c.side==="party"){ ctx2.fillRect(p.x, p.y, 24, 32); }
+    else { ctx2.fillRect(p.x, p.y, 40, 40); }
+    if (c.defending){ ctx2.strokeStyle = PAL.ready; ctx2.strokeRect(p.x-3,p.y-3,(c.side==="party"?24:40)+6,(c.side==="party"?32:40)+6); }
+    if (c.side==="enemy" && c.alive){
+      ctx2.fillStyle = PAL.dim; ctx2.fillText(c.name, p.x-4, p.y+44);
+      bar(p.x-4, p.y+58, 60, c.hp/c.maxHp, PAL.hp);
+    }
+    // target cursor
+    if (menu && menu.mode==="target"){
+      const pool = livingFoes();
+      if (pool[menu.tIdx]===c){ ctx2.fillStyle = PAL.ready; ctx2.fillText("▶", p.x-16, p.y+14); }
+    }
+    if (menu && menu.actor===c && battleState==="MENU_OPEN"){
+      ctx2.fillStyle = PAL.ready; ctx2.fillText("◀", p.x+30, p.y+10);
+    }
+  }
+  // party status strip
+  win(200, 200, 276, 96);
+  party.forEach((c,i)=>{
+    const y = 208 + i*28;
+    ctx2.fillStyle = c.alive ? PAL.text : PAL.dead;
+    ctx2.fillText(c.name.padEnd(8), 210, y);
+    ctx2.fillStyle = PAL.dim; ctx2.fillText(String(c.hp).padStart(3)+"/"+c.maxHp, 286, y);
+    bar(356, y+3, 60, c.atb/READY, c.ready ? PAL.ready : PAL.atb);
+    ctx2.fillStyle = c.ready ? PAL.ready : PAL.dim;
+    ctx2.fillText(c.ready?"!":"", 422, y);
+  });
+  // command window
+  if (battleState==="MENU_OPEN" && menu){
+    win(4, 200, 190, 96);
+    ctx2.fillStyle = PAL.dim; ctx2.fillText(menu.mode==="command" ? menu.actor.name : "Target:", 14, 208);
+    if (menu.mode==="command"){
+      menu.cmds.forEach((cmd,i)=>{
+        ctx2.fillStyle = i===menu.idx ? PAL.ready : PAL.text;
+        ctx2.fillText((i===menu.idx?"▶ ":"  ")+cmd, 14, 228+i*20);
+      });
+    } else {
+      livingFoes().forEach((f,i)=>{
+        ctx2.fillStyle = i===menu.tIdx ? PAL.ready : PAL.text;
+        ctx2.fillText((i===menu.tIdx?"▶ ":"  ")+f.name, 14, 228+i*20);
+      });
+    }
+  }
+  // message line
+  if (msgT>0){ msgT -= dt; win(4, 4, 472, 26); ctx2.fillStyle = PAL.text; ctx2.fillText(msg, 14, 11); }
+  // floaters
+  for (let i=floaters.length-1;i>=0;i--){
+    const f = floaters[i]; f.t -= dt; f.y -= dt*0.03;
+    if (f.t<=0){ floaters.splice(i,1); continue; }
+    ctx2.fillStyle = f.color; ctx2.globalAlpha = Math.min(1, f.t/400);
+    ctx2.fillText(f.txt, f.x, f.y); ctx2.globalAlpha = 1;
+  }
+  // end states
+  if (battleState==="VICTORY" || battleState==="DEFEAT"){
+    win(140, 120, 200, 40);
+    ctx2.fillStyle = battleState==="VICTORY" ? PAL.heal : PAL.enemy;
+    ctx2.fillText(battleState==="VICTORY" ? "VICTORY!" : "DEFEAT...", 210, 133);
+  }
+  // state label (debug/teaching aid)
+  ctx2.fillStyle = PAL.win2; ctx2.fillText("state: "+battleState, 6, 286);
+}
+
+// ---------- main loop ----------
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(50, now - last); last = now;
+  tickATB(dt);
+  handleMenu();
+  draw(dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
