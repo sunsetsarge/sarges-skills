@@ -29,7 +29,7 @@ metadata:
 
 | Source Page | Page ID | Content |
 |-------------|---------|---------|
-| Home Assistant — Project Log | TODO | Session logs, instance-specific lessons |
+| Home Assistant — Project Log | 80969753 | Session logs, instance-specific lessons |
 | Project Logs hub | 98494 | Parent for HA project pages |
 
 **Last synced:** 2026-07-04 | **Source version:** skill-home-assistant v1.0
