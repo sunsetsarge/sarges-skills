@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-04",
+  "currency": "USD",
+
+  "profile": {
+    "name": "Test User",
+    "risk_tolerance": "moderate",
+    "income_structure": "steady",
+    "working_style_notes": "prefers automation, dislikes recurring manual chores",
+    "tone": "technical-concise",
+    "goals": [
+      {"id": "g1", "name": "Emergency fund", "target_amount": 15000.0,
+       "target_date": "2027-06-30", "current_amount": 4000.0,
+       "priority": 1, "horizon": "short"}
+    ]
+  },
+
+  "accounts": [
+    {"id": "a1", "name": "Checking", "institution": "Bank X", "mask": "1234",
+     "type": "checking", "balance": 5230.12, "as_of": "2026-07-01",
+     "apr_or_apy": 0.0, "is_liability": false, "source": "export"},
+    {"id": "a2", "name": "High-Yield Savings", "institution": "Bank X", "mask": "5678",
+     "type": "savings", "balance": 8000.0, "as_of": "2026-07-01",
+     "apr_or_apy": 0.045, "is_liability": false, "source": "export"},
+    {"id": "a3", "name": "Brokerage", "institution": "Fidelity", "mask": "9012",
+     "type": "brokerage", "balance": 22000.0, "as_of": "2026-07-01",
+     "apr_or_apy": null, "is_liability": false, "source": "export"},
+    {"id": "a4", "name": "401k", "institution": "Fidelity", "mask": "3456",
+     "type": "retirement", "balance": 45000.0, "as_of": "2026-07-01",
+     "apr_or_apy": null, "is_liability": false, "source": "export"},
+    {"id": "a5", "name": "Visa Credit Card", "institution": "Chase", "mask": "7890",
+     "type": "credit_card", "balance": -4200.0, "as_of": "2026-07-01",
+     "apr_or_apy": 0.2399, "is_liability": true, "source": "export"},
+    {"id": "a6", "name": "Student Loan", "institution": "Navient", "mask": "2345",
+     "type": "loan", "balance": -2000.0, "as_of": "2026-07-01",
+     "apr_or_apy": 0.055, "is_liability": true, "source": "export"}
+  ],
+
+  "transactions": [
+    {"date": "2026-06-01", "account_id": "a1", "amount": 2950.00, "description": "PAYROLL DEPOSIT", "category": "income", "is_income": true, "is_transfer": false},
+    {"date": "2026-06-02", "account_id": "a1", "amount": -82.50, "description": "HARRIS TEETER 041", "category": "groceries", "is_income": false, "is_transfer": false},
+    {"date": "2026-06-03", "account_id": "a1", "amount": -41.10, "description": "SHELL OIL", "category": "gas", "is_income": false, "is_transfer": false},
+    {"date": "2026-06-04", "account_id": "a1", "amount": -15.49, "description": "NETFLIX.COM", "category": "subscriptions", "is_income": false, "is_transfer": false},
+    {"date": "2026-06-05", "account_id": "a1", "amount": -500.00, "description": "TRANSFER TO SAVINGS", "category": "transfer", "is_income": false, "is_transfer": true},
+    {"date": "2026-06-06", "account_id": "a1", "amount": -145.22, "description": "DUKE ENERGY UTILITY BILL", "category": "utilities", "is_income": false, "is_transfer": false},
+    {"date": "2026-06-07", "account_id": "a1", "amount": -98.00, "description": "GEICO INSURANCE PREMIUM", "category": "insurance", "is_income": false, "is_transfer": false},
+    {"date": "2026-06-15", "account_id": "a1", "amount": 2950.00, "description": "PAYROLL DEPOSIT", "category": "income", "is_income": true, "is_transfer": false},
+    {"date": "2026-06-16", "account_id": "a1", "amount": -1200.00, "description": "RENT PAYMENT LANDLORD LLC", "category": "housing", "is_income": false, "is_transfer": false},
+    {"date": "2026-06-18", "account_id": "a1", "amount": -350.00, "description": "CAPITAL ONE CRCARDPMT", "category": "credit_card_payment", "is_income": false, "is_transfer": false}
+  ],
+
+  "holdings": [
+    {"account_id": "a3", "symbol": "VTI", "quantity": 41.2, "cost_basis": 8200.0,
+     "last_price": 289.31, "price_as_of": "2026-07-03", "asset_class": "us_equity"},
+    {"account_id": "a3", "symbol": "BND", "quantity": 100.0, "cost_basis": 7300.0,
+     "last_price": 72.50, "price_as_of": "2026-07-03", "asset_class": "bonds"}
+  ],
+
+  "market_context": {
+    "as_of": "2026-07-03",
+    "rates": {"savings_hy_apy": 0.045, "cd_12mo": 0.043, "mortgage_30y": 0.068,
+              "treasury_10y": 0.042, "inflation_cpi_yoy": 0.029},
+    "sentiment_notes": []
+  },
+
+  "assumptions": {
+    "expected_return_pct": 6.0,
+    "inflation_pct": 3.0,
+    "retirement_age": 65,
+    "current_age": 35,
+    "monthly_contribution": 500.0,
+    "emergency_fund_months": 6,
+    "notes": "every entry here is user-editable in interactive formats"
+  },
+
+  "analysis": {
+    "net_worth": {"assets": 0.0, "liabilities": 0.0, "net": 0.0, "trend": []},
+    "cash_flow": {"monthly_income_avg": 0.0, "monthly_expenses_avg": 0.0,
+                  "surplus": 0.0, "savings_rate_pct": 0.0,
+                  "by_category": {}, "income_streams": []},
+    "emergency_fund": {"runway_months": 0.0, "target_months": 6,
+                       "target_amount": 0.0, "gap": 0.0},
+    "debt": {"total": 0.0, "items": [],
+             "avalanche": {"months_to_free": 0, "total_interest": 0.0, "order": []},
+             "snowball":  {"months_to_free": 0, "total_interest": 0.0, "order": []}},
+    "retirement": {"scenarios": {
+        "best":  {"return_pct": 8.0, "value_at_retirement": 0.0},
+        "base":  {"return_pct": 6.0, "value_at_retirement": 0.0},
+        "worst": {"return_pct": 3.0, "value_at_retirement": 0.0}},
+        "projection_series": []},
+    "allocation": {"current": {"us_equity": 0.0, "intl_equity": 0.0, "bonds": 0.0,
+                               "cash": 0.0, "other": 0.0},
+                   "target": {}, "flags": []},
+    "insurance_gaps": ["not assessed — needs coverage details"],
+    "tax_advantaged": ["not assessed — needs contribution details"],
+    "action_plan": []
+  },
+
+  "source_manifest": [
+    {"item": "All balances", "source": "synthetic test fixture", "as_of": "2026-07-01", "confidence": "assumed"}
+  ],
+
+  "disclaimer": "This is educational information, not licensed financial, investment, tax, or legal advice. Verify important decisions with a qualified professional."
+}

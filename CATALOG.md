@@ -2,7 +2,7 @@
 
 Source-of-truth catalog for Blaine's skill ecosystem. Mirrored to Confluence (Skills Catalog page) for human browsing. This file is the canonical copy; regenerate the Confluence page from it, never the reverse.
 
-Last updated: 2026-07-03
+Last updated: 2026-07-04
 
 ## sarges-skills (this repo — `C:\Claude\sarges-skills`)
 
@@ -15,6 +15,7 @@ Last updated: 2026-07-03
 | `browser-game-builder` | build/clone/finish a browser·HTML5·canvas game, RTS/tower-defense/top-down shooter, add units·sprites·factions·game sfx·balance, 8-dir sprite facing | — | 1.0.0 |
 | `vintage-ad-generator` | create original vintage/period ad artwork, heritage/nostalgia tee, Local Lore town ad, "fake old newspaper ad", vintage art "looks too AI" | — | 1.0.0 |
 | `workspace-audit` | run an audit, audit my workspace/setup, check for drift, Audit N, /workspace-audit | — | 1.0.0 |
+| `financial-plan-architect` | financial plan, budget, net worth, retirement/savings/debt-payoff plan, financial health check, bank/brokerage exports analysis, refresh my plan | — | 1.0.0 |
 
 Slash command: `commands/goal.md` → installed at `~/.claude/commands/goal.md` (`/goal <objective>`).
 Third-party installed skills are credited (not copied) in `third-party/CREDITS.md` — public repo is Option A: authored code + cited upstream links.

@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Financial Plan Dashboard</title>
+<style>
+  :root {
+    --ink: #1F2937;
+    --muted: #6B7280;
+    --good: #0F766E;
+    --bad: #B91C1C;
+    --card-bg: #F0FDFA;
+    --border: #D1D5DB;
+    --header-bg: #1F2937;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--ink);
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 16px;
+    background: #fff;
+  }
+  h1 { font-size: 22px; margin: 0 0 4px 0; }
+  h2 { font-size: 16px; margin-bottom: 8px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .small { font-size: 11px; }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .card {
+    border-radius: 10px;
+    padding: 14px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+  }
+  .card-label { font-size: 12px; font-weight: 600; color: #374151; }
+  .card-value { font-size: 24px; font-weight: 700; margin-top: 4px; }
+  .card-good .card-value { color: var(--good); }
+  .card-bad .card-value { color: var(--bad); }
+  .section { margin: 24px 0; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
+  .goal-row { margin-bottom: 12px; }
+  .goal-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+  .goal-date { margin-top: 2px; }
+  .progress-track { background: #E5E7EB; border-radius: 6px; height: 8px; overflow: hidden; }
+  .progress-fill { background: var(--good); height: 100%; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { border: 1px solid var(--border); padding: 6px 8px; text-align: left; }
+  th { background: var(--header-bg); color: #fff; }
+  .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 180px; border-bottom: 1px solid var(--border); padding: 0 4px; }
+  .bar { flex: 1; background: var(--good); border-radius: 2px 2px 0 0; position: relative; min-width: 12px; }
+  .bar-label { font-size: 10px; text-align: center; color: var(--muted); margin-top: 4px; }
+  .bars-wrap { display: flex; }
+  .bars-col { flex: 1; display: flex; flex-direction: column; align-items: center; }
+  .svg-chart { width: 100%; height: auto; }
+  .footer {
+    border-top: 1px solid var(--border);
+    margin-top: 24px;
+    padding-top: 12px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .security-note {
+    background: #FFFBEB;
+    border: 1px solid #FDE68A;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #92400E;
+    margin: 12px 0;
+  }
+  .no-data { color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Financial Plan Dashboard</h1>
+  <div class="muted" id="generated-line"></div>
+</header>
+
+<div class="security-note">
+  Local file &mdash; private on your machine; not &ldquo;secure anywhere.&rdquo; Opening this file
+  does not send any data over the network. If you copy or host this file, treat it as
+  sensitive: anyone with the file (or the link, if hosted) can read everything in it.
+</div>
+
+<section class="cards" id="cards"></section>
+
+<section class="section">
+  <h2>Goal Progress</h2>
+  <div id="goals"></div>
+</section>
+
+<section class="grid-2">
+  <div class="section">
+    <h2>Spending by Category</h2>
+    <div id="category-chart"></div>
+  </div>
+  <div class="section">
+    <h2>Debt Payoff (Avalanche vs. Snowball)</h2>
+    <div id="debt-table"></div>
+  </div>
+</section>
+
+<section class="section">
+  <h2>Retirement Projection (Best / Base / Worst)</h2>
+  <div id="retirement-chart"></div>
+</section>
+
+<section class="section">
+  <h2>Source Manifest</h2>
+  <div id="source-manifest"></div>
+</section>
+
+<footer class="footer">
+  <p id="disclaimer"></p>
+  <p class="small">This file works fully offline; it makes no network requests of any kind.</p>
+</footer>
+
+<script>
+  // ---------------------------------------------------------------------
+  // Injection point: the build/render step replaces the object literal
+  // below with the actual plan_model.json content. Keep the marker comment
+  // exactly as-is so automated injection can find it.
+  // ---------------------------------------------------------------------
+  const PLAN_MODEL = /*__PLAN_MODEL_JSON__*/{};
+
+  function fmtMoney(v, currency) {
+    if (v === null || v === undefined || isNaN(v)) return "n/a";
+    try {
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: currency || "USD", maximumFractionDigits: 0 }).format(v);
+    } catch (e) {
+      return "$" + Number(v).toFixed(0);
+    }
+  }
+
+  function fmtPct(v) {
+    if (v === null || v === undefined || isNaN(v)) return "n/a";
+    return Number(v).toFixed(1) + "%";
+  }
+
+  function el(tag, attrs, children) {
+    const node = document.createElement(tag);
+    if (attrs) {
+      for (const k in attrs) {
+        if (k === "class") node.className = attrs[k];
+        else if (k === "text") node.textContent = attrs[k];
+        else node.setAttribute(k, attrs[k]);
+      }
+    }
+    (children || []).forEach((c) => node.appendChild(c));
+    return node;
+  }
+
+  function renderDashboard(model) {
+    model = model || {};
+    const currency = model.currency || "USD";
+    const analysis = model.analysis || {};
+    const netWorth = analysis.net_worth || {};
+    const cashFlow = analysis.cash_flow || {};
+    const emergencyFund = analysis.emergency_fund || {};
+    const debt = analysis.debt || {};
+    const retirement = analysis.retirement || {};
+    const goals = (model.profile && model.profile.goals) || [];
+    const manifest = model.source_manifest || [];
+
+    document.getElementById("generated-line").textContent =
+      "Generated " + (model.generated_at || "unknown") + " · " + currency;
+
+    // --- KPI cards ---
+    const cardsWrap = document.getElementById("cards");
+    const cardsData = [
+      { label: "Net Worth", value: fmtMoney(netWorth.net, currency), tone: (netWorth.net || 0) >= 0 ? "good" : "bad" },
+      { label: "Savings Rate", value: fmtPct(cashFlow.savings_rate_pct), tone: "neutral" },
+      { label: "Emergency Runway", value: (emergencyFund.runway_months != null ? emergencyFund.runway_months + " mo" : "n/a"), tone: (emergencyFund.gap || 0) > 0 ? "bad" : "good" },
+      { label: "Total Debt", value: fmtMoney(debt.total, currency), tone: (debt.total || 0) > 0 ? "bad" : "good" },
+    ];
+    cardsData.forEach((c) => {
+      cardsWrap.appendChild(
+        el("div", { class: "card card-" + c.tone }, [
+          el("div", { class: "card-label", text: c.label }),
+          el("div", { class: "card-value", text: c.value }),
+        ])
+      );
+    });
+
+    // --- Goals ---
+    const goalsWrap = document.getElementById("goals");
+    if (!goals.length) {
+      goalsWrap.appendChild(el("p", { class: "no-data", text: "No goals recorded." }));
+    } else {
+      goals.forEach((g) => {
+        const pct = g.target_amount ? (100 * (g.current_amount || 0)) / g.target_amount : 0;
+        const clamped = Math.max(0, Math.min(100, pct));
+        const row = el("div", { class: "goal-row" }, [
+          el("div", { class: "goal-header" }, [
+            el("span", { text: g.name || "Goal" }),
+            el("span", { class: "muted", text: fmtMoney(g.current_amount, currency) + " / " + fmtMoney(g.target_amount, currency) + " (" + pct.toFixed(0) + "%)" }),
+          ]),
+          el("div", { class: "progress-track" }, [
+            el("div", { class: "progress-fill", style: "width:" + clamped + "%" }),
+          ]),
+        ]);
+        if (g.target_date) {
+          row.appendChild(el("div", { class: "muted goal-date", text: "Target: " + g.target_date }));
+        }
+        goalsWrap.appendChild(row);
+      });
+    }
+
+    // --- Spending by category (CSS bar chart) ---
+    const catWrap = document.getElementById("category-chart");
+    const byCat = cashFlow.by_category || {};
+    const catEntries = Object.entries(byCat);
+    if (!catEntries.length) {
+      catWrap.appendChild(el("p", { class: "no-data", text: "No category data." }));
+    } else {
+      const max = Math.max.apply(null, catEntries.map((e) => e[1] || 0).concat([1]));
+      const barsRow = el("div", { class: "bar-chart" });
+      catEntries.forEach(([label, value]) => {
+        const heightPct = Math.max(2, (100 * (value || 0)) / max);
+        const col = el("div", { class: "bars-col" }, [
+          el("div", { class: "bar", style: "height:" + heightPct + "%", title: label + ": " + fmtMoney(value, currency) }),
+        ]);
+        barsRow.appendChild(col);
+      });
+      catWrap.appendChild(barsRow);
+      const labelsRow = el("div", { class: "bars-wrap" });
+      catEntries.forEach(([label]) => {
+        labelsRow.appendChild(el("div", { class: "bars-col" }, [el("div", { class: "bar-label", text: label })]));
+      });
+      catWrap.appendChild(labelsRow);
+    }
+
+    // --- Debt table ---
+    const debtWrap = document.getElementById("debt-table");
+    const avalanche = debt.avalanche || {};
+    const snowball = debt.snowball || {};
+    const table = el("table", {}, [
+      el("thead", {}, [
+        el("tr", {}, [
+          el("th", { text: "Strategy" }),
+          el("th", { text: "Months to free" }),
+          el("th", { text: "Total interest" }),
+        ]),
+      ]),
+      el("tbody", {}, [
+        el("tr", {}, [
+          el("td", { text: "Avalanche" }),
+          el("td", { text: avalanche.months_to_free != null ? String(avalanche.months_to_free) : "n/a" }),
+          el("td", { text: fmtMoney(avalanche.total_interest, currency) }),
+        ]),
+        el("tr", {}, [
+          el("td", { text: "Snowball" }),
+          el("td", { text: snowball.months_to_free != null ? String(snowball.months_to_free) : "n/a" }),
+          el("td", { text: fmtMoney(snowball.total_interest, currency) }),
+        ]),
+      ]),
+    ]);
+    debtWrap.appendChild(table);
+
+    // --- Retirement projection (SVG line chart) ---
+    const retWrap = document.getElementById("retirement-chart");
+    const series = retirement.projection_series || [];
+    if (!series.length) {
+      retWrap.appendChild(el("p", { class: "no-data", text: "No retirement projection data." }));
+    } else {
+      const width = 700, height = 240, pad = 36;
+      const ages = series.map((p) => p.age);
+      const minAge = Math.min.apply(null, ages), maxAge = Math.max.apply(null, ages);
+      const allVals = series.flatMap((p) => [p.best || 0, p.base || 0, p.worst || 0]);
+      const maxVal = Math.max.apply(null, allVals.concat([1]));
+      const scaleX = (x) => pad + ((x - minAge) / ((maxAge - minAge) || 1)) * (width - pad * 2);
+      const scaleY = (y) => height - pad - (y / maxVal) * (height - pad * 2);
+
+      const ns = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(ns, "svg");
+      svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+      svg.setAttribute("class", "svg-chart");
+      svg.setAttribute("role", "img");
+      svg.setAttribute("aria-label", "Retirement projection chart");
+
+      const axisX = document.createElementNS(ns, "line");
+      axisX.setAttribute("x1", pad); axisX.setAttribute("y1", height - pad);
+      axisX.setAttribute("x2", width - pad); axisX.setAttribute("y2", height - pad);
+      axisX.setAttribute("stroke", "#D1D5DB");
+      svg.appendChild(axisX);
+
+      const seriesDefs = [
+        { key: "best", color: "#0F766E" },
+        { key: "base", color: "#2563EB" },
+        { key: "worst", color: "#B91C1C" },
+      ];
+      seriesDefs.forEach((sd) => {
+        const pts = series.map((p) => scaleX(p.age) + "," + scaleY(p[sd.key] || 0));
+        const path = document.createElementNS(ns, "polyline");
+        path.setAttribute("points", pts.join(" "));
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", sd.color);
+        path.setAttribute("stroke-width", "2.5");
+        svg.appendChild(path);
+      });
+
+      series.forEach((p) => {
+        const t = document.createElementNS(ns, "text");
+        t.setAttribute("x", scaleX(p.age));
+        t.setAttribute("y", height - pad + 16);
+        t.setAttribute("font-size", "10");
+        t.setAttribute("text-anchor", "middle");
+        t.setAttribute("fill", "#6B7280");
+        t.textContent = p.age;
+        svg.appendChild(t);
+      });
+
+      retWrap.appendChild(svg);
+
+      const legend = el("div", { class: "muted small" }, [
+        el("span", { text: "● Best (teal)  ● Base (blue)  ● Worst (red)" }),
+      ]);
+      retWrap.appendChild(legend);
+    }
+
+    // --- Source manifest ---
+    const manifestWrap = document.getElementById("source-manifest");
+    if (!manifest.length) {
+      manifestWrap.appendChild(el("p", { class: "no-data", text: "No source manifest entries provided." }));
+    } else {
+      const mtable = el("table", {}, [
+        el("thead", {}, [
+          el("tr", {}, [
+            el("th", { text: "Item" }),
+            el("th", { text: "Source" }),
+            el("th", { text: "As Of" }),
+            el("th", { text: "Confidence" }),
+          ]),
+        ]),
+      ]);
+      const tbody = el("tbody");
+      manifest.forEach((m) => {
+        tbody.appendChild(
+          el("tr", {}, [
+            el("td", { text: m.item || "" }),
+            el("td", { text: m.source || "" }),
+            el("td", { text: m.as_of || "" }),
+            el("td", { text: m.confidence || "" }),
+          ])
+        );
+      });
+      mtable.appendChild(tbody);
+      manifestWrap.appendChild(mtable);
+    }
+
+    // --- Disclaimer ---
+    document.getElementById("disclaimer").textContent =
+      "Disclaimer: " + (model.disclaimer ||
+        "This is educational information, not licensed financial, investment, tax, or legal advice. Verify important decisions with a qualified professional.");
+  }
+
+  renderDashboard(PLAN_MODEL);
+</script>
+
+</body>
+</html>
