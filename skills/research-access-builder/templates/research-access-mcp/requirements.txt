@@ -1,0 +1,9 @@
+httpx>=0.27,<1
+mcp>=1.27,<2
+
+# Optional, best-effort Google Scholar scraping fallback (Slice 3). Stale on PyPI (v1.7.11,
+# ~18 months old) and Google actively blocks scraping. NOT installed by default — the
+# scholar_gs.py adapter guarded-imports this and falls back to a manual-URL payload if
+# it's missing. Uncomment only if you specifically want the scrape-based fallback instead
+# of the SerpApi-based one (SERPAPI_API_KEY covers most needs with a free 250/mo tier).
+# scholarly>=1.7.11
