@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Text Adventure</title>
+<!--
+  template.html -- single-file browser runtime for the text-adventure skill.
+
+  Self-contained: all CSS and JS are inline, no external requests, no CDN,
+  no build step. Open this file directly in a browser.
+
+  This file reimplements the SAME world-model + declarative rules semantics
+  as engine/engine.py (rooms, objects, flags, parser, scope, default verbs,
+  triggers/conditions/effects) so a single world JSON can drive both
+  runtimes. If you change rules semantics in engine.py, mirror the change
+  here (and vice versa).
+
+  NOTE (Python-only escape hatch): engine.py supports an optional hooks.py
+  file for custom Python logic that isn't expressible as declarative rules.
+  hooks.py does NOT run here -- there is no Python in the browser. Any game
+  that relies on hooks.py for correctness will NOT behave identically when
+  exported to this HTML runtime; keep puzzle-critical logic in the
+  declarative "rules" array so both runtimes agree.
+
+  World JSON can be supplied three ways, tried in this order:
+    1. Inline JSON in the <script id="world" type="application/json"> block
+       below (paste your world's JSON between the braces before shipping
+       a single distributable HTML file).
+    2. A file picked via the "Load world file" button (client-side
+       FileReader, no upload/network involved).
+    3. JSON pasted into the textarea and confirmed via "Load pasted JSON".
+-->
+<style>
+  :root {
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #0b0e0b;
+    color: #c8f0c8;
+    font-family: "Courier New", Consolas, monospace;
+  }
+  #app {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  h1 {
+    font-size: 1.2rem;
+    color: #8fffb0;
+    border-bottom: 1px solid #234;
+    padding-bottom: 0.5rem;
+    margin-top: 0;
+  }
+  #loader {
+    border: 1px dashed #345;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+  }
+  #loader.hidden { display: none; }
+  #loader textarea {
+    width: 100%;
+    height: 100px;
+    background: #05100a;
+    color: #c8f0c8;
+    border: 1px solid #234;
+    font-family: inherit;
+    font-size: 0.8rem;
+  }
+  #loader button, #controls button {
+    background: #123;
+    color: #c8f0c8;
+    border: 1px solid #345;
+    padding: 0.3rem 0.6rem;
+    cursor: pointer;
+    font-family: inherit;
+    margin-right: 0.4rem;
+  }
+  #loader button:hover, #controls button:hover { background: #234; }
+  #output {
+    flex: 1;
+    white-space: pre-wrap;
+    overflow-y: auto;
+    border: 1px solid #234;
+    padding: 0.75rem;
+    background: #05100a;
+    min-height: 300px;
+    max-height: 60vh;
+  }
+  #output .cmd { color: #ffd479; }
+  #output .sep { color: #345; }
+  #input-row {
+    display: flex;
+    margin-top: 0.5rem;
+  }
+  #input-row span.prompt {
+    padding: 0.4rem 0.4rem 0.4rem 0;
+    color: #8fffb0;
+  }
+  #cmd-input {
+    flex: 1;
+    background: #05100a;
+    color: #c8f0c8;
+    border: 1px solid #234;
+    padding: 0.4rem;
+    font-family: inherit;
+    font-size: 1rem;
+  }
+  #controls {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+  }
+  #status {
+    font-size: 0.75rem;
+    color: #6a8;
+    margin-top: 0.3rem;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1 id="game-title">Text Adventure</h1>
+
+  <div id="loader">
+    <div>No inline world detected (or you want to load a different one).</div>
+    <input type="file" id="file-picker" accept="application/json,.json">
+    <div style="margin-top:0.5rem;">Or paste world JSON below:</div>
+    <textarea id="paste-area" placeholder="{ &quot;meta&quot;: ... }"></textarea>
+    <div style="margin-top:0.4rem;">
+      <button id="load-pasted">Load pasted JSON</button>
+    </div>
+  </div>
+
+  <div id="output" aria-live="polite"></div>
+
+  <div id="input-row">
+    <span class="prompt">&gt;</span>
+    <input type="text" id="cmd-input" autocomplete="off" autofocus placeholder="type a command...">
+  </div>
+
+  <div id="controls">
+    <button id="btn-save">Save</button>
+    <button id="btn-load">Load</button>
+    <button id="btn-undo">Undo</button>
+    <button id="btn-restart">Restart</button>
+    <button id="btn-help">Help</button>
+  </div>
+  <div id="status"></div>
+</div>
+
+<!--
+  Paste your world's JSON between the braces below to ship a single
+  distributable HTML file with the game baked in. Leave as {} to force the
+  file-picker/paste fallback above.
+-->
+<script id="world" type="application/json">
+{}
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  // === ENGINE-CORE-START ===============================================
+  // Pure game-engine logic: world model, parser, rules evaluator, default
+  // verb handlers, and the Engine class. NO DOM references beyond this
+  // point until ENGINE-CORE-END -- this block is mechanically extracted
+  // (as plain text) by engine/web/parity_test.mjs and run standalone under
+  // Node to prove this runtime stays in lockstep with engine.py. If you
+  // add a DOM reference (document., window., localStorage, etc.) inside
+  // this block, the parity harness will break; keep DOM wiring below
+  // ENGINE-CORE-END instead.
+  // ======================================================================
+
+  // -------------------------------------------------------------------
+  // Vocabulary defaults (mirrors DEFAULT_VERB_SYNONYMS in engine.py)
+  // -------------------------------------------------------------------
+  const DEFAULT_VERB_SYNONYMS = {
+    look: ["look", "l"], examine: ["examine", "x", "inspect", "describe"],
+    inventory: ["inventory", "i", "inv"], take: ["take", "get", "grab", "pick"],
+    drop: ["drop"], go: ["go", "walk", "run", "move"], open: ["open"],
+    close: ["close", "shut"], lock: ["lock"], unlock: ["unlock"], read: ["read"],
+    push: ["push"], pull: ["pull"], turn: ["turn"], put: ["put", "place", "insert"],
+    wear: ["wear", "don"], remove: ["remove", "unwear", "doff"], eat: ["eat"],
+    drink: ["drink"], search: ["search"], enter: ["enter"], exit: ["exit"],
+    wait: ["wait", "z"], again: ["again", "g"], attack: ["attack", "hit", "kill", "fight"],
+    talk: ["talk", "speak"], ask: ["ask"], tell: ["tell"], give: ["give"],
+    save: ["save"], load: ["load", "restore"], undo: ["undo"], restart: ["restart"],
+    quit: ["quit", "q"], score: ["score"], help: ["help", "?"],
+    verbose: ["verbose"], brief: ["brief"],
+  };
+
+  const DIRECTIONS = {
+    north: ["north", "n"], south: ["south", "s"], east: ["east", "e"], west: ["west", "w"],
+    up: ["up", "u"], down: ["down", "d"], in: ["in", "enter"], out: ["out", "exit"],
+    northeast: ["northeast", "ne"], northwest: ["northwest", "nw"],
+    southeast: ["southeast", "se"], southwest: ["southwest", "sw"],
+  };
+
+  const PREPOSITIONS = ["with", "using", "in", "into", "on", "onto", "to", "at", "from", "under"];
+  const ARTICLES = new Set(["a", "an", "the"]);
+  const CHAIN_WORDS = new Set(["then"]);
+  const FLAG_KEYS = ["portable", "fixed", "container", "open", "openable", "lockable",
+    "locked", "key", "supporter", "light_source", "on", "edible", "drinkable",
+    "readable", "wearable", "worn"];
+  const GRUE_MESSAGE = "It is pitch black. You are likely to be eaten by a grue.";
+
+  // -------------------------------------------------------------------
+  // World model
+  // -------------------------------------------------------------------
+  function deepCopy(x) { return JSON.parse(JSON.stringify(x)); }
+
+  class World {
+    constructor(worldJson) {
+      this.data = worldJson;
+      this.meta = worldJson.meta || {};
+      this.title = this.meta.title || "Untitled Adventure";
+      this.maxScore = this.meta.max_score || 0;
+      this.ranks = this.meta.ranks || [];
+
+      this.rooms = {};
+      for (const [rid, r] of Object.entries(worldJson.rooms || {})) {
+        this.rooms[rid] = deepCopy(r);
+      }
+
+      this.objects = {};
+      for (const [oid, o] of Object.entries(worldJson.objects || {})) {
+        const obj = deepCopy(o);
+        const flags = obj.flags || {};
+        const norm = {};
+        for (const k of FLAG_KEYS) norm[k] = !!flags[k];
+        obj.flags = norm;
+        this.objects[oid] = obj;
+      }
+
+      this.flags = deepCopy(worldJson.flags || {});
+
+      this.verbSynonyms = {};
+      for (const [k, v] of Object.entries(DEFAULT_VERB_SYNONYMS)) this.verbSynonyms[k] = v.slice();
+      const vocab = worldJson.vocabulary || {};
+      for (const [verb, syns] of Object.entries(vocab.verbs || {})) {
+        const existing = new Set(this.verbSynonyms[verb] || []);
+        for (const s of syns) existing.add(s);
+        existing.add(verb);
+        this.verbSynonyms[verb] = Array.from(existing).sort();
+      }
+
+      this.rules = (worldJson.rules || []).slice();
+
+      this.currentRoom = this.meta.start_room;
+      this.score = 0;
+      this.turns = 0;
+      this.gameOver = false;
+      this.win = false;
+      this.endMessage = null;
+      this.visitedRooms = new Set();
+      this.pronounIt = null;
+      this.verbose = true;
+      this.lastCommand = null;
+      this.undoStack = [];
+      this.maxUndo = 10;
+    }
+
+    serialize() {
+      return {
+        rooms: deepCopy(this.rooms), objects: deepCopy(this.objects),
+        flags: deepCopy(this.flags), currentRoom: this.currentRoom,
+        score: this.score, turns: this.turns, gameOver: this.gameOver,
+        win: this.win, endMessage: this.endMessage,
+        visitedRooms: Array.from(this.visitedRooms), pronounIt: this.pronounIt,
+        verbose: this.verbose,
+      };
+    }
+
+    restore(snap) {
+      this.rooms = deepCopy(snap.rooms);
+      this.objects = deepCopy(snap.objects);
+      this.flags = deepCopy(snap.flags);
+      this.currentRoom = snap.currentRoom;
+      this.score = snap.score;
+      this.turns = snap.turns;
+      this.gameOver = snap.gameOver;
+      this.win = snap.win;
+      this.endMessage = snap.endMessage;
+      this.visitedRooms = new Set(snap.visitedRooms);
+      this.pronounIt = snap.pronounIt;
+      this.verbose = snap.verbose;
+    }
+
+    pushUndo() {
+      this.undoStack.push(this.serialize());
+      if (this.undoStack.length > this.maxUndo) this.undoStack.shift();
+    }
+
+    popUndo() {
+      if (this.undoStack.length === 0) return false;
+      this.restore(this.undoStack.pop());
+      return true;
+    }
+
+    objLocation(oid) { return (this.objects[oid] || {}).location ?? "nowhere"; }
+    setObjLocation(oid, loc) { this.objects[oid].location = loc; }
+
+    objectsInRoom(roomId) {
+      return Object.entries(this.objects).filter(([, o]) => o.location === roomId).map(([id]) => id);
+    }
+    objectsInInventory() {
+      return Object.entries(this.objects).filter(([, o]) => o.location === "inventory").map(([id]) => id);
+    }
+    objectsInContainer(cid) {
+      return Object.entries(this.objects)
+        .filter(([, o]) => o.location && typeof o.location === "object" && o.location.in === cid)
+        .map(([id]) => id);
+    }
+    objectsOnSupporter(sid) {
+      return Object.entries(this.objects)
+        .filter(([, o]) => o.location && typeof o.location === "object" && o.location.on === sid)
+        .map(([id]) => id);
+    }
+    objectsHolding(hid) { return this.objectsInContainer(hid).concat(this.objectsOnSupporter(hid)); }
+
+    isLit() {
+      const room = this.rooms[this.currentRoom] || {};
+      if (!room.dark) return true;
+      for (const oid of this.scopeObjectIds(false)) {
+        const o = this.objects[oid];
+        if (o.flags.light_source && o.flags.on) return true;
+      }
+      return false;
+    }
+
+    scopeObjectIds(includeDarkCheck) {
+      if (includeDarkCheck === undefined) includeDarkCheck = true;
+      if (includeDarkCheck && !this.isLit()) {
+        let ids = this.objectsInInventory();
+        for (const oid of ids.slice()) {
+          const o = this.objects[oid];
+          if (o.flags.container && o.flags.open) ids = ids.concat(this.objectsHolding(oid));
+        }
+        return ids;
+      }
+      let ids = [];
+      const roomObjs = this.objectsInRoom(this.currentRoom);
+      ids = ids.concat(roomObjs);
+      for (const oid of roomObjs) {
+        const o = this.objects[oid];
+        if (o.flags.container && o.flags.open) ids = ids.concat(this.objectsHolding(oid));
+        if (o.flags.supporter) ids = ids.concat(this.objectsHolding(oid));
+      }
+      const inv = this.objectsInInventory();
+      ids = ids.concat(inv);
+      for (const oid of inv) {
+        const o = this.objects[oid];
+        if (o.flags.container && o.flags.open) ids = ids.concat(this.objectsHolding(oid));
+      }
+      const seen = new Set();
+      const out = [];
+      for (const oid of ids) { if (!seen.has(oid)) { seen.add(oid); out.push(oid); } }
+      return out;
+    }
+
+    describeObjectShort(oid) {
+      const o = this.objects[oid];
+      let suffix = "";
+      if (o.flags.container) suffix = o.flags.open ? " (open)" : " (closed)";
+      if (o.flags.worn) suffix += " (worn)";
+      if (o.flags.light_source && o.flags.on) suffix += " (on)";
+      return (o.name || oid) + suffix;
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // Parser (mirrors parse_command / resolve_noun in engine.py)
+  // -------------------------------------------------------------------
+  function canonicalVerb(word, world) {
+    word = word.toLowerCase();
+    for (const [canon, syns] of Object.entries(world.verbSynonyms)) {
+      if (word === canon || syns.includes(word)) return canon;
+    }
+    return null;
+  }
+  function canonicalDirection(word) {
+    word = word.toLowerCase();
+    for (const [canon, syns] of Object.entries(DIRECTIONS)) {
+      if (word === canon || syns.includes(word)) return canon;
+    }
+    return null;
+  }
+  function tokenize(line) { return line.trim().toLowerCase().split(/\s+/).filter(Boolean); }
+
+  function splitChainedCommands(line) {
+    const normalized = line.split(".").join(" . ");
+    const tokens = normalized.split(/\s+/).filter(Boolean);
+    const commands = [[]];
+    for (const tok of tokens) {
+      const low = tok.toLowerCase();
+      if (tok === "." || CHAIN_WORDS.has(low)) commands.push([]);
+      else commands[commands.length - 1].push(tok);
+    }
+    return commands.filter(c => c.length).map(c => c.join(" "));
+  }
+
+  function parseCommand(line, world) {
+    const res = { raw: line, verb: null, verbWord: null, nounWords: [], prep: null, targetWords: [], error: null, isDirection: false };
+    let tokens = tokenize(line).filter(t => !ARTICLES.has(t));
+    if (tokens.length === 0) { res.error = "EMPTY"; return res; }
+
+    const first = tokens[0];
+    const dir = canonicalDirection(first);
+    if (dir && tokens.length === 1) {
+      res.verb = "go"; res.verbWord = first; res.isDirection = true; res.nounWords = [dir];
+      return res;
+    }
+
+    const verb = canonicalVerb(first, world);
+    if (verb === null) { res.error = `I don't know how to '${first}'.`; return res; }
+    res.verb = verb; res.verbWord = first;
+
+    const rest = tokens.slice(1);
+    if (verb === "go" && rest.length) {
+      const d = canonicalDirection(rest[0]);
+      if (d) { res.nounWords = [d]; res.isDirection = true; return res; }
+    }
+
+    let prepIdx = -1;
+    for (let i = 0; i < rest.length; i++) {
+      if (PREPOSITIONS.includes(rest[i])) { prepIdx = i; break; }
+    }
+    if (prepIdx === -1) {
+      res.nounWords = rest;
+    } else {
+      res.nounWords = rest.slice(0, prepIdx);
+      res.prep = rest[prepIdx];
+      res.targetWords = rest.slice(prepIdx + 1);
+    }
+    return res;
+  }
+
+  function matchesObject(oid, words, world) {
+    if (!words.length) return false;
+    const o = world.objects[oid];
+    const names = new Set([(o.name || "").toLowerCase()]);
+    for (const s of (o.synonyms || [])) names.add(s.toLowerCase());
+    const adjectives = new Set((o.adjectives || []).map(a => a.toLowerCase()));
+
+    const head = words[words.length - 1];
+    if (!names.has(head)) {
+      const joined = words.join(" ");
+      return names.has(joined);
+    }
+    for (let i = 0; i < words.length - 1; i++) {
+      if (!adjectives.has(words[i]) && !names.has(words[i])) return false;
+    }
+    return true;
+  }
+
+  function resolveNoun(words, world, pronounOk) {
+    if (pronounOk === undefined) pronounOk = true;
+    if (!words.length) return [null, null];
+
+    if (pronounOk && words.length === 1 && words[0] === "it") {
+      if (world.pronounIt && world.scopeObjectIds().includes(world.pronounIt)) {
+        return [world.pronounIt, null];
+      }
+      return [null, "You'll have to be more specific -- I don't know what 'it' refers to."];
+    }
+
+    const scope = world.scopeObjectIds();
+    const candidates = scope.filter(oid => matchesObject(oid, words, world));
+
+    if (candidates.length === 0) return [null, "You can't see any such thing."];
+    if (candidates.length === 1) return [candidates[0], null];
+
+    const names = candidates.map(c => world.objects[c].name || c);
+    let question;
+    if (names.length === 2) {
+      question = `Which do you mean, the ${names[0]} or the ${names[1]}?`;
+    } else {
+      const listed = names.slice(0, -1).join(", the ");
+      question = `Which do you mean, the ${listed}, or the ${names[names.length - 1]}?`;
+    }
+    return [null, question];
+  }
+
+  // -------------------------------------------------------------------
+  // Rules engine (mirrors condition_met / apply_effect / run_rules)
+  // -------------------------------------------------------------------
+  function objLocMatches(loc, target) {
+    if (typeof target !== "string") return false;
+    if (target.startsWith("in:")) return loc && typeof loc === "object" && loc.in === target.slice(3);
+    if (target.startsWith("on:")) return loc && typeof loc === "object" && loc.on === target.slice(3);
+    return loc === target;
+  }
+
+  function conditionMet(world, cond) {
+    if ("flag" in cond) {
+      const val = world.flags[cond.flag];
+      const want = "equals" in cond ? cond.equals : true;
+      return val === want;
+    }
+    if ("object" in cond && "location" in cond) {
+      const oid = cond.object;
+      if (!(oid in world.objects)) return false;
+      return objLocMatches(world.objLocation(oid), cond.location);
+    }
+    if ("object" in cond && "property" in cond) {
+      const oid = cond.object;
+      if (!(oid in world.objects)) return false;
+      const want = "equals" in cond ? cond.equals : true;
+      return !!world.objects[oid].flags[cond.property] === !!want;
+    }
+    if ("score_at_least" in cond) return world.score >= cond.score_at_least;
+    if ("score_at_most" in cond) return world.score <= cond.score_at_most;
+    return false;
+  }
+
+  function conditionsMet(world, conditions) {
+    return (conditions || []).every(c => conditionMet(world, c));
+  }
+
+  function applyEffect(world, effect, output) {
+    if ("set_flag" in effect) { world.flags[effect.set_flag] = "value" in effect ? effect.value : true; return; }
+    if ("move" in effect) {
+      const oid = effect.move; const to = effect.to;
+      if (typeof to === "string" && to.startsWith("in:")) world.setObjLocation(oid, { in: to.slice(3) });
+      else if (typeof to === "string" && to.startsWith("on:")) world.setObjLocation(oid, { on: to.slice(3) });
+      else world.setObjLocation(oid, to);
+      return;
+    }
+    if ("reveal_exit" in effect) {
+      const spec = effect.reveal_exit;
+      const room = world.rooms[spec.room];
+      if (room) { room.exits = room.exits || {}; room.exits[spec.direction] = spec.to; }
+      return;
+    }
+    if ("lock_exit" in effect) {
+      const spec = effect.lock_exit;
+      const room = world.rooms[spec.room];
+      if (room && room.exits) delete room.exits[spec.direction];
+      return;
+    }
+    if ("unlock" in effect) {
+      const oid = effect.unlock;
+      if (oid in world.objects) world.objects[oid].flags.locked = false;
+      return;
+    }
+    if ("lock" in effect) {
+      const oid = effect.lock;
+      if (oid in world.objects) world.objects[oid].flags.locked = true;
+      return;
+    }
+    if ("print" in effect) { output.push(effect.print); return; }
+    if ("score" in effect) { world.score += effect.score; return; }
+    if ("win" in effect) { world.gameOver = true; world.win = true; world.endMessage = effect.win; return; }
+    if ("lose" in effect) { world.gameOver = true; world.win = false; world.endMessage = effect.lose; return; }
+  }
+
+  // MAX_FLAG_CASCADE_DEPTH mirrors engine.py's cascade guard: on_flag rules
+  // can themselves change flags, which fires further on_flag rules, but this
+  // caps how deep that chain can go (protects against two on_flag rules that
+  // flip each other's flag back and forth forever).
+  const MAX_FLAG_CASCADE_DEPTH = 10;
+
+  function applyEffects(world, effects, output) {
+    applyEffectsCascade(world, effects, output, 1);
+  }
+
+  function applyEffectsCascade(world, effects, output, depth) {
+    const changedFlags = [];
+    for (const e of (effects || [])) {
+      if ("set_flag" in e) {
+        const name = e.set_flag;
+        const before = world.flags[name];
+        applyEffect(world, e, output);
+        const after = world.flags[name];
+        if (before !== after) changedFlags.push(name);
+      } else {
+        applyEffect(world, e, output);
+      }
+    }
+    for (const name of changedFlags) fireOnFlag(world, name, output, depth);
+  }
+
+  function fireOnFlag(world, flagName, output, depth) {
+    if (depth > MAX_FLAG_CASCADE_DEPTH) return;
+    for (const rule of world.rules) {
+      if (!ruleTriggerMatches(rule, null, null, null, "on_flag", flagName)) continue;
+      if (!conditionsMet(world, rule.conditions)) continue;
+      applyEffectsCascade(world, rule.effects, output, depth + 1);
+    }
+  }
+
+  function ruleTriggerMatches(rule, verb, noun, target, kind, extra) {
+    const trig = rule.trigger || {};
+    if (kind === "command") {
+      if ("on_enter" in trig || "on_turn" in trig || "on_flag" in trig) return false;
+      if ("verb" in trig && trig.verb !== verb) return false;
+      if ("object" in trig && trig.object !== noun) return false;
+      if ("target" in trig && trig.target !== target) return false;
+      return "verb" in trig;
+    }
+    if (kind === "on_enter") return trig.on_enter === extra;
+    if (kind === "on_turn") return "on_turn" in trig;
+    if (kind === "on_flag") return trig.on_flag === extra;
+    return false;
+  }
+
+  function runRules(world, kind, opts) {
+    opts = opts || {};
+    let consumed = false;
+    const output = [];
+    for (const rule of world.rules) {
+      if (!ruleTriggerMatches(rule, opts.verb, opts.noun, opts.target, kind, opts.extra)) continue;
+      if (!conditionsMet(world, rule.conditions)) continue;
+      applyEffects(world, rule.effects, output);
+      consumed = true;
+      if (kind === "command" && (rule.stop === undefined ? true : rule.stop)) break;
+    }
+    return [consumed, output];
+  }
+
+  // -------------------------------------------------------------------
+  // Default verb handlers (mirrors do_* functions in engine.py)
+  // -------------------------------------------------------------------
+  function roomFullDescription(world) {
+    const room = world.rooms[world.currentRoom];
+    const lines = [room.name || world.currentRoom];
+    if (!world.isLit()) { lines.push(GRUE_MESSAGE); return lines.join("\n"); }
+    lines.push(room.description || "");
+    const objs = world.objectsInRoom(world.currentRoom).filter(o => !world.objects[o].flags.worn);
+    if (objs.length) lines.push("You can see: " + objs.map(o => world.describeObjectShort(o)).join(", ") + ".");
+    const exits = Object.keys(room.exits || {}).sort();
+    if (exits.length) lines.push("Exits: " + exits.join(", ") + ".");
+    return lines.join("\n");
+  }
+  function roomBrief(world) {
+    const room = world.rooms[world.currentRoom];
+    if (!world.isLit()) return `${room.name || world.currentRoom}\n${GRUE_MESSAGE}`;
+    return room.name || world.currentRoom;
+  }
+  function doLook(world) {
+    if (!world.visitedRooms.has(world.currentRoom) || world.verbose) return roomFullDescription(world);
+    return roomBrief(world);
+  }
+  function doInventory(world) {
+    const items = world.objectsInInventory();
+    if (!items.length) return "You are carrying nothing.";
+    return "You are carrying: " + items.map(o => world.describeObjectShort(o)).join(", ") + ".";
+  }
+  function doExamine(world, oid) {
+    const o = world.objects[oid];
+    let desc = o.description || `You see nothing special about the ${o.name || oid}.`;
+    const extra = [];
+    if (o.flags.readable && o.text) extra.push(`It reads: "${o.text}"`);
+    if (o.flags.container) {
+      if (o.flags.open) {
+        const contents = world.objectsHolding(oid);
+        extra.push(contents.length ? "It contains: " + contents.map(c => world.describeObjectShort(c)).join(", ") + "." : "It is empty.");
+      } else extra.push("It is closed.");
+    }
+    if (extra.length) desc = desc + " " + extra.join(" ");
+    return desc;
+  }
+  function doTake(world, oid) {
+    const o = world.objects[oid];
+    if (world.objLocation(oid) === "inventory") return `You already have the ${o.name || oid}.`;
+    if (o.flags.portable === false || o.flags.fixed) return `You can't take the ${o.name || oid}.`;
+    world.setObjLocation(oid, "inventory");
+    return "Taken.";
+  }
+  function doDrop(world, oid) {
+    if (world.objLocation(oid) !== "inventory") return "You aren't carrying that.";
+    world.setObjLocation(oid, world.currentRoom);
+    return "Dropped.";
+  }
+  function exitTarget(exitVal) {
+    if (typeof exitVal === "string") return [exitVal, null];
+    if (exitVal && typeof exitVal === "object") return [exitVal.to || null, exitVal.door || null];
+    return [null, null];
+  }
+  function doGo(world, direction) {
+    const room = world.rooms[world.currentRoom];
+    const exits = room.exits || {};
+    if (!(direction in exits)) return "You can't go that way.";
+    const [target, door] = exitTarget(exits[direction]);
+    if (door) {
+      const doorObj = world.objects[door];
+      if (doorObj && doorObj.flags.lockable && doorObj.flags.locked) return `The ${doorObj.name || door} is locked.`;
+      if (doorObj && doorObj.flags.openable && !doorObj.flags.open) return `The ${doorObj.name || door} is closed.`;
+    }
+    if (!target || !(target in world.rooms)) return "You can't go that way.";
+    world.currentRoom = target;
+    return null;
+  }
+  function doOpen(world, oid) {
+    const o = world.objects[oid];
+    if (o.flags.locked) return `The ${o.name || oid} is locked.`;
+    if (!o.flags.openable && !o.flags.container) return `You can't open the ${o.name || oid}.`;
+    if (o.flags.open) return `The ${o.name || oid} is already open.`;
+    o.flags.open = true;
+    return `You open the ${o.name || oid}.`;
+  }
+  function doClose(world, oid) {
+    const o = world.objects[oid];
+    if (!o.flags.open) return `The ${o.name || oid} is already closed.`;
+    o.flags.open = false;
+    return `You close the ${o.name || oid}.`;
+  }
+  function doLock(world, oid, keyId) {
+    const o = world.objects[oid];
+    if (!o.flags.lockable) return `You can't lock the ${o.name || oid}.`;
+    const requiredKey = o.key;
+    if (keyId === null) return "Lock it with what?";
+    if (keyId !== requiredKey) return `The ${world.objects[keyId].name || keyId} doesn't fit.`;
+    o.flags.locked = true;
+    return `You lock the ${o.name || oid}.`;
+  }
+  function doUnlock(world, oid, keyId) {
+    const o = world.objects[oid];
+    if (!o.flags.lockable) return `You can't unlock the ${o.name || oid}.`;
+    if (!o.flags.locked) return `The ${o.name || oid} is already unlocked.`;
+    const requiredKey = o.key;
+    if (keyId === null) return "Unlock it with what?";
+    if (keyId !== requiredKey) return `The ${world.objects[keyId].name || keyId} doesn't fit.`;
+    o.flags.locked = false;
+    return `You unlock the ${o.name || oid}.`;
+  }
+  function doRead(world, oid) {
+    const o = world.objects[oid];
+    if (!o.flags.readable) return `There's nothing to read on the ${o.name || oid}.`;
+    return o.text || "It's blank.";
+  }
+  function doPut(world, oid, prep, targetId) {
+    const obj = world.objects[oid];
+    const tgt = world.objects[targetId];
+    if (world.objLocation(oid) !== "inventory") return `You aren't holding the ${obj.name || oid}.`;
+    if (prep === "in" || prep === "into") {
+      if (!tgt.flags.container) return `You can't put things in the ${tgt.name || targetId}.`;
+      if (!tgt.flags.open) return `The ${tgt.name || targetId} is closed.`;
+      world.setObjLocation(oid, { in: targetId });
+      return `You put the ${obj.name || oid} in the ${tgt.name || targetId}.`;
+    }
+    if (!tgt.flags.supporter) return `You can't put things on the ${tgt.name || targetId}.`;
+    world.setObjLocation(oid, { on: targetId });
+    return `You put the ${obj.name || oid} on the ${tgt.name || targetId}.`;
+  }
+  function doWear(world, oid) {
+    const o = world.objects[oid];
+    if (!o.flags.wearable) return `You can't wear the ${o.name || oid}.`;
+    if (world.objLocation(oid) !== "inventory") return `You aren't carrying the ${o.name || oid}.`;
+    o.flags.worn = true;
+    return `You put on the ${o.name || oid}.`;
+  }
+  function doRemove(world, oid) {
+    const o = world.objects[oid];
+    if (!o.flags.worn) return `You aren't wearing the ${o.name || oid}.`;
+    o.flags.worn = false;
+    return `You take off the ${o.name || oid}.`;
+  }
+  function doEat(world, oid) {
+    const o = world.objects[oid];
+    if (!o.flags.edible) return `You can't eat the ${o.name || oid}.`;
+    world.setObjLocation(oid, "nowhere");
+    return `You eat the ${o.name || oid}. Delicious.`;
+  }
+  function doDrink(world, oid) {
+    const o = world.objects[oid];
+    if (!o.flags.drinkable) return `You can't drink the ${o.name || oid}.`;
+    return `You drink the ${o.name || oid}.`;
+  }
+  function doSearch(world, oid) {
+    const o = world.objects[oid];
+    if (o.flags.container) {
+      if (!o.flags.open) return `The ${o.name || oid} is closed.`;
+      const contents = world.objectsHolding(oid);
+      return contents.length ? "You find: " + contents.map(c => world.describeObjectShort(c)).join(", ") + "." : "You find nothing.";
+    }
+    return `You find nothing special in the ${o.name || oid}.`;
+  }
+  function doTurnOnOff(world, oid, on) {
+    const o = world.objects[oid];
+    if (!o.flags.light_source) return "Nothing happens.";
+    o.flags.on = on;
+    return `You turn the ${o.name || oid} ${on ? "on" : "off"}.`;
+  }
+
+  // -------------------------------------------------------------------
+  // Engine (mirrors class Engine in engine.py)
+  // -------------------------------------------------------------------
+  class GameOverSignal {
+    constructor(kind) { this.kind = kind; }
+  }
+
+  class Engine {
+    constructor(world) { this.world = world; }
+
+    startMessage() {
+      const w = this.world;
+      w.visitedRooms.add(w.currentRoom);
+      const header = `${w.title}\n${"=".repeat(w.title.length)}\n`;
+      const [, msgs] = runRules(w, "on_enter", { extra: w.currentRoom });
+      const body = roomFullDescription(w);
+      const extra = msgs.length ? "\n" + msgs.join("\n") : "";
+      return header + "\n" + body + extra;
+    }
+
+    executeLine(line) {
+      const parts = splitChainedCommands(line);
+      if (!parts.length) return "I beg your pardon?";
+      const outputs = [];
+      for (const single of parts) outputs.push(this._executeSingle(single));
+      return outputs.filter(o => o).join("\n");
+    }
+
+    _executeSingle(line) {
+      const w = this.world;
+      const stripped = line.trim();
+      if (!stripped) return "I beg your pardon?";
+
+      if (stripped.toLowerCase() === "again" || stripped.toLowerCase() === "g") {
+        if (w.lastCommand === null) return "There's nothing to repeat.";
+        line = w.lastCommand;
+      } else {
+        w.lastCommand = line;
+      }
+
+      const res = parseCommand(line, w);
+      if (res.error === "EMPTY") return "I beg your pardon?";
+      if (res.error) return res.error;
+
+      const verb = res.verb;
+
+      const metaResult = this._handleMeta(verb, res);
+      if (metaResult !== undefined) return metaResult;
+
+      if (w.gameOver) return "The game has ended. Type 'restart' to play again, or 'quit' to exit.";
+
+      w.pushUndo();
+
+      let nounId = null, targetId = null, direction = null;
+
+      if (verb === "go") {
+        direction = res.nounWords.length ? res.nounWords[0] : null;
+      } else {
+        if (res.nounWords.length) {
+          const low = res.nounWords.map(x => x.toLowerCase());
+          if ((low.length === 1 && low[0] === "all") || (low.length === 1 && low[0] === "everything")) {
+            return this._handleAll(verb);
+          }
+          const [nid, err] = resolveNoun(res.nounWords, w);
+          if (err) return err;
+          nounId = nid;
+        }
+        if (res.targetWords.length) {
+          const [tid, err2] = resolveNoun(res.targetWords, w);
+          if (err2) return err2;
+          targetId = tid;
+        }
+      }
+
+      if (nounId) w.pronounIt = nounId;
+      if (targetId) w.pronounIt = targetId;
+
+      const allowedInDark = new Set(["go", "turn", "inventory", "wait", "look", "drop"]);
+      if (!w.isLit() && !allowedInDark.has(verb)) return GRUE_MESSAGE;
+
+      const [consumed, msgs] = runRules(w, "command", { verb, noun: nounId, target: targetId });
+      if (consumed) {
+        const out = msgs.join("\n");
+        const after = this._endOfTurn();
+        return (out + (after ? "\n" + after : "")).trim();
+      }
+
+      const out = this._defaultAction(verb, res, nounId, targetId, direction);
+      const after = this._endOfTurn();
+      let combined = out || "";
+      if (after) combined = combined ? (combined + "\n" + after).trim() : after;
+      return combined;
+    }
+
+    _handleAll(verb) {
+      const w = this.world;
+      if (verb === "take") {
+        const targets = w.objectsInRoom(w.currentRoom).filter(oid => w.objects[oid].flags.portable !== false && !w.objects[oid].flags.fixed);
+        if (!targets.length) return "There is nothing here to take.";
+        const lines = [];
+        for (const oid of targets) { w.pushUndo(); lines.push(doTake(w, oid)); }
+        const after = this._endOfTurn();
+        if (after) lines.push(after);
+        return lines.join("\n");
+      }
+      if (verb === "drop") {
+        const targets = w.objectsInInventory();
+        if (!targets.length) return "You aren't carrying anything.";
+        const lines = [];
+        for (const oid of targets) { w.pushUndo(); lines.push(doDrop(w, oid)); }
+        const after = this._endOfTurn();
+        if (after) lines.push(after);
+        return lines.join("\n");
+      }
+      return "You can't do that with 'all'.";
+    }
+
+    _handleMeta(verb) {
+      const w = this.world;
+      if (verb === "quit") throw new GameOverSignal("quit");
+      if (verb === "restart") throw new GameOverSignal("restart");
+      if (verb === "help") {
+        return "Standard commands: look, examine <obj>, inventory, take/drop <obj>, " +
+          "go <direction> (n/s/e/w/u/d/ne/nw/se/sw/in/out), open/close/lock/unlock <obj>, " +
+          "read <obj>, put <obj> in/on <obj>, wear/remove <obj>, eat/drink <obj>, search <obj>, " +
+          "turn on/off <obj>, wait, again, save/load, undo, score, restart, quit, verbose/brief.";
+      }
+      if (verb === "score") return `You have scored ${w.score} out of ${w.maxScore} points in ${w.turns} turns.`;
+      if (verb === "verbose") { w.verbose = true; return "Verbose mode: room descriptions will always be shown."; }
+      if (verb === "brief") { w.verbose = false; return "Brief mode: full descriptions only on first visit."; }
+      if (verb === "undo") return w.popUndo() ? "Undone." : "Nothing to undo.";
+      return undefined;
+    }
+
+    _defaultAction(verb, res, nounId, targetId, direction) {
+      const w = this.world;
+      if (verb === "look") return doLook(w);
+      if (verb === "inventory") return doInventory(w);
+      if (verb === "go") {
+        if (direction === null) return "Go where?";
+        const err = doGo(w, direction);
+        if (err !== null) return err;
+        const firstVisit = !w.visitedRooms.has(w.currentRoom);
+        w.visitedRooms.add(w.currentRoom);
+        const [, enterMsgs] = runRules(w, "on_enter", { extra: w.currentRoom });
+        let base = (w.verbose || firstVisit) ? roomFullDescription(w) : roomBrief(w);
+        if (enterMsgs.length) base = base + "\n" + enterMsgs.join("\n");
+        return base;
+      }
+      if (verb === "wait") return "Time passes.";
+      if (nounId === null && !["look", "inventory", "wait", "turn"].includes(verb)) {
+        return verb.charAt(0).toUpperCase() + verb.slice(1) + " what?";
+      }
+      if (verb === "examine") return doExamine(w, nounId);
+      if (verb === "take") return doTake(w, nounId);
+      if (verb === "drop") return doDrop(w, nounId);
+      if (verb === "open") return doOpen(w, nounId);
+      if (verb === "close") return doClose(w, nounId);
+      if (verb === "lock") return doLock(w, nounId, targetId);
+      if (verb === "unlock") return doUnlock(w, nounId, targetId);
+      if (verb === "read") return doRead(w, nounId);
+      if (verb === "put") {
+        if (targetId === null) return "Put it where?";
+        const prep = res.prep || "in";
+        return doPut(w, nounId, prep, targetId);
+      }
+      if (verb === "wear") return doWear(w, nounId);
+      if (verb === "remove") return doRemove(w, nounId);
+      if (verb === "eat") return doEat(w, nounId);
+      if (verb === "drink") return doDrink(w, nounId);
+      if (verb === "search") return doSearch(w, nounId);
+      if (verb === "turn") {
+        const words = res.nounWords.map(x => x.toLowerCase());
+        const on = words.includes("on") || res.prep === "on";
+        const off = words.includes("off") || res.prep === "off";
+        const wordsWo = words.filter(x => x !== "on" && x !== "off");
+        let oid;
+        if (wordsWo.length) {
+          const [rid, err] = resolveNoun(wordsWo, w);
+          if (err) return err;
+          oid = rid;
+        } else if (res.targetWords.length) {
+          const [rid, err] = resolveNoun(res.targetWords, w);
+          if (err) return err;
+          oid = rid;
+        } else {
+          oid = nounId;
+        }
+        if (oid === null || oid === undefined) return "Turn what?";
+        if (on) return doTurnOnOff(w, oid, true);
+        if (off) return doTurnOnOff(w, oid, false);
+        return `You turn the ${w.objects[oid].name || oid}, but nothing happens.`;
+      }
+      if (verb === "push") return `You push the ${w.objects[nounId].name || nounId}, but nothing happens.`;
+      if (verb === "pull") return `You pull the ${w.objects[nounId].name || nounId}, but nothing happens.`;
+      if (verb === "enter") return `You can't enter the ${w.objects[nounId].name || nounId}.`;
+      if (verb === "exit") return "You can't exit that.";
+      if (verb === "attack") return "Violence isn't the answer here.";
+      if (verb === "talk" || verb === "ask" || verb === "tell") return "There's no reply.";
+      if (verb === "give") return "There's no one here to give that to.";
+      return "You can't do that.";
+    }
+
+    _endOfTurn() {
+      const w = this.world;
+      w.turns += 1;
+      const msgs = [];
+      const [, ruleMsgs] = runRules(w, "on_turn");
+      msgs.push(...ruleMsgs);
+      if (w.gameOver && w.endMessage) {
+        msgs.push(w.endMessage);
+        msgs.push(this._rankLine());
+      }
+      return msgs.join("\n");
+    }
+
+    _rankLine() {
+      const w = this.world;
+      let title = "Adventurer";
+      const sorted = w.ranks.slice().sort((a, b) => b[0] - a[0]);
+      for (const [threshold, name] of sorted) {
+        if (w.score >= threshold) { title = name; break; }
+      }
+      return `You scored ${w.score} of ${w.maxScore} points in ${w.turns} turns, earning the rank of ${title}.`;
+    }
+  }
+
+  // === ENGINE-CORE-END =================================================
+  // Everything below this line is DOM wiring only (page UI, localStorage,
+  // file input) -- not part of the extracted engine-core block.
+  // ======================================================================
+
+  // Expose the engine-core classes to parity_test.mjs when this file is
+  // loaded under Node (no `document`/`window` global there) instead of a
+  // browser. Never runs in the browser: `typeof module` is "undefined"
+  // there, so this whole block no-ops in the shipped page.
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+      World, Engine, GameOverSignal,
+      parseCommand, resolveNoun, tokenize, splitChainedCommands,
+      runRules, applyEffect, applyEffects, conditionMet, conditionsMet,
+      roomFullDescription, roomBrief,
+      DEFAULT_VERB_SYNONYMS, DIRECTIONS,
+    };
+    return;
+  }
+
+  // -------------------------------------------------------------------
+  // UI wiring
+  // -------------------------------------------------------------------
+  const outputEl = document.getElementById("output");
+  const inputEl = document.getElementById("cmd-input");
+  const loaderEl = document.getElementById("loader");
+  const statusEl = document.getElementById("status");
+  const titleEl = document.getElementById("game-title");
+
+  let engine = null;
+  const SAVE_KEY = "text-adventure-save";
+
+  function appendOutput(text, isCommand) {
+    const div = document.createElement("div");
+    if (isCommand) {
+      const cmdLine = document.createElement("div");
+      cmdLine.className = "cmd";
+      cmdLine.textContent = "> " + text;
+      outputEl.appendChild(cmdLine);
+    } else {
+      div.textContent = text;
+      outputEl.appendChild(div);
+    }
+    outputEl.scrollTop = outputEl.scrollHeight;
+  }
+
+  function startGame(worldJson) {
+    try {
+      const world = new World(worldJson);
+      engine = new Engine(world);
+      loaderEl.classList.add("hidden");
+      outputEl.textContent = "";
+      titleEl.textContent = world.title;
+      appendOutput(engine.startMessage(), false);
+      statusEl.textContent = "Game loaded.";
+      inputEl.focus();
+    } catch (e) {
+      statusEl.textContent = "Failed to load world: " + e.message;
+    }
+  }
+
+  function runCommand(cmd) {
+    if (!engine) return;
+    appendOutput(cmd, true);
+    try {
+      const out = engine.executeLine(cmd);
+      if (out) appendOutput(out, false);
+      if (engine.world.gameOver) {
+        appendOutput("Type 'restart' to play again.", false);
+      }
+    } catch (e) {
+      if (e instanceof GameOverSignal) {
+        if (e.kind === "quit") {
+          appendOutput("Goodbye.", false);
+        } else if (e.kind === "restart") {
+          const worldJson = engine.world.data;
+          startGame(worldJson);
+        }
+        return;
+      }
+      // Last-resort safety net: never show a raw error to the player.
+      appendOutput("Something went wrong processing that command. Try something else.", false);
+    }
+  }
+
+  inputEl.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      const cmd = inputEl.value;
+      inputEl.value = "";
+      runCommand(cmd);
+    }
+  });
+
+  document.getElementById("btn-save").addEventListener("click", function () {
+    if (!engine) return;
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(engine.world.serialize()));
+      statusEl.textContent = "Saved to browser storage.";
+    } catch (e) {
+      statusEl.textContent = "Save failed: " + e.message;
+    }
+  });
+
+  document.getElementById("btn-load").addEventListener("click", function () {
+    if (!engine) return;
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) { statusEl.textContent = "No save found in browser storage."; return; }
+      engine.world.restore(JSON.parse(raw));
+      appendOutput("Loaded saved game.", false);
+      appendOutput(roomFullDescription(engine.world), false);
+      statusEl.textContent = "Loaded from browser storage.";
+    } catch (e) {
+      statusEl.textContent = "Load failed: " + e.message;
+    }
+  });
+
+  document.getElementById("btn-undo").addEventListener("click", function () { runCommand("undo"); });
+  document.getElementById("btn-restart").addEventListener("click", function () { runCommand("restart"); });
+  document.getElementById("btn-help").addEventListener("click", function () { runCommand("help"); });
+
+  document.getElementById("file-picker").addEventListener("change", function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (evt) {
+      try {
+        const json = JSON.parse(evt.target.result);
+        startGame(json);
+      } catch (err) {
+        statusEl.textContent = "Could not parse that file as JSON: " + err.message;
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById("load-pasted").addEventListener("click", function () {
+    const raw = document.getElementById("paste-area").value;
+    try {
+      const json = JSON.parse(raw);
+      startGame(json);
+    } catch (err) {
+      statusEl.textContent = "Could not parse pasted JSON: " + err.message;
+    }
+  });
+
+  // Try the inline world block first.
+  (function tryInlineWorld() {
+    const el = document.getElementById("world");
+    let json = null;
+    try {
+      json = JSON.parse(el.textContent);
+    } catch (e) {
+      json = null;
+    }
+    if (json && json.meta && json.rooms && Object.keys(json.rooms).length) {
+      startGame(json);
+    } else {
+      loaderEl.classList.remove("hidden");
+      statusEl.textContent = "Waiting for a world file (inline block was empty).";
+    }
+  })();
+})();
+</script>
+</body>
+</html>

@@ -16,6 +16,7 @@ Last updated: 2026-07-04
 | `vintage-ad-generator` | create original vintage/period ad artwork, heritage/nostalgia tee, Local Lore town ad, "fake old newspaper ad", vintage art "looks too AI" | — | 1.0.0 |
 | `workspace-audit` | run an audit, audit my workspace/setup, check for drift, Audit N, /workspace-audit | — | 1.0.0 |
 | `financial-plan-architect` | financial plan, budget, net worth, retirement/savings/debt-payoff plan, financial health check, bank/brokerage exports analysis, refresh my plan | — | 1.0.0 |
+| `text-adventure` | text adventure, interactive fiction, IF game, Zork/Zork-like, parser game, "make me a text game", room-and-inventory game, MUD-like single-player (NOT Twine hypertext) | — | 1.0.0 |
 
 Slash command: `commands/goal.md` → installed at `~/.claude/commands/goal.md` (`/goal <objective>`).
 Third-party installed skills are credited (not copied) in `third-party/CREDITS.md` — public repo is Option A: authored code + cited upstream links.

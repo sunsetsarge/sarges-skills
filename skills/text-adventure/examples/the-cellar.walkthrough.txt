@@ -1,0 +1,15 @@
+# the-cellar.walkthrough.txt
+# Exact winning command sequence for examples/the-cellar.json.
+# Run with: python engine/walkthrough_runner.py examples/the-cellar.json examples/the-cellar.walkthrough.txt
+
+look
+take lamp
+search barrel
+take brass key
+turn on lamp
+down
+unlock iron door with brass key
+open iron door
+north
+take crown
+put crown on altar

@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "title": "Untitled Adventure",
+    "author": "Your Name",
+    "start_room": "start_room",
+    "max_score": 10,
+    "ranks": [
+      [10, "Master Adventurer"],
+      [5, "Junior Adventurer"],
+      [0, "Amateur"]
+    ]
+  },
+  "flags": {},
+  "vocabulary": {
+    "verbs": {}
+  },
+  "rooms": {
+    "start_room": {
+      "name": "Starting Room",
+      "description": "A plain room. This is a minimal scaffold -- replace this description, add more rooms, and wire up exits.",
+      "dark": false,
+      "exits": {}
+    }
+  },
+  "objects": {
+    "note": {
+      "name": "note",
+      "synonyms": ["paper", "scrap"],
+      "adjectives": ["small"],
+      "description": "A small note. It looks important.",
+      "location": "start_room",
+      "flags": {
+        "portable": true,
+        "readable": true
+      },
+      "text": "This is a placeholder note. Replace me with real content."
+    }
+  },
+  "rules": []
+}

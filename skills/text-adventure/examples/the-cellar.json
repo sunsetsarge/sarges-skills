@@ -1,0 +1,210 @@
+{
+  "meta": {
+    "title": "The Cellar",
+    "author": "text-adventure skill example",
+    "start_room": "kitchen",
+    "max_score": 10,
+    "ranks": [
+      [10, "Master Adventurer"],
+      [5, "Junior Adventurer"],
+      [0, "Amateur"]
+    ]
+  },
+  "flags": {
+    "rug_moved": false,
+    "barrel_searched": false
+  },
+  "vocabulary": {
+    "verbs": {}
+  },
+  "rooms": {
+    "kitchen": {
+      "name": "Kitchen",
+      "description": "A dim farmhouse kitchen. A heavy wooden table sits in the middle of the room, and a rug lies rumpled near the corner. A flour barrel stands against the wall. A stairway leads down into darkness.",
+      "dark": false,
+      "exits": {
+        "down": "cellar"
+      }
+    },
+    "cellar": {
+      "name": "Cellar",
+      "description": "A cold, damp cellar carved from raw earth. Water drips somewhere in the dark. An iron door, thick with rust, is set into the far wall.",
+      "dark": true,
+      "exits": {
+        "up": "kitchen",
+        "north": {"to": "vault", "door": "iron_door"}
+      }
+    },
+    "vault": {
+      "name": "Vault",
+      "description": "A small stone vault, untouched for decades. A stone altar stands in the center of the room, its surface carved with faded runes.",
+      "dark": false,
+      "exits": {
+        "south": "cellar"
+      }
+    }
+  },
+  "objects": {
+    "table": {
+      "name": "table",
+      "synonyms": ["shelf"],
+      "adjectives": ["wooden", "heavy"],
+      "description": "A heavy wooden table, scarred from years of use.",
+      "location": "kitchen",
+      "flags": {
+        "fixed": true,
+        "supporter": true
+      }
+    },
+    "lamp": {
+      "name": "brass lamp",
+      "synonyms": ["lamp", "light"],
+      "adjectives": ["brass"],
+      "description": "A sturdy brass lamp, the kind that could burn for hours on a little oil.",
+      "location": {"on": "table"},
+      "flags": {
+        "portable": true,
+        "light_source": true,
+        "on": false
+      }
+    },
+    "rug": {
+      "name": "rug",
+      "synonyms": ["carpet"],
+      "adjectives": ["rumpled", "old"],
+      "description": "A rumpled old rug. Something might be under it.",
+      "location": "kitchen",
+      "flags": {
+        "fixed": true
+      }
+    },
+    "barrel": {
+      "name": "flour barrel",
+      "synonyms": ["barrel"],
+      "adjectives": ["flour"],
+      "description": "A wooden barrel half full of flour. Worth a search.",
+      "location": "kitchen",
+      "flags": {
+        "fixed": true,
+        "container": true,
+        "open": true
+      }
+    },
+    "brass_key": {
+      "name": "brass key",
+      "synonyms": ["key"],
+      "adjectives": ["brass", "small"],
+      "description": "A small brass key, tarnished with age.",
+      "location": {"in": "barrel"},
+      "flags": {
+        "portable": true,
+        "key": true
+      }
+    },
+    "iron_door": {
+      "name": "iron door",
+      "synonyms": ["door"],
+      "adjectives": ["iron", "rusty"],
+      "description": "A heavy iron door, thick with rust. A keyhole is set just below the handle.",
+      "location": "cellar",
+      "key": "brass_key",
+      "flags": {
+        "fixed": true,
+        "openable": true,
+        "open": false,
+        "lockable": true,
+        "locked": true
+      }
+    },
+    "altar": {
+      "name": "stone altar",
+      "synonyms": ["altar"],
+      "adjectives": ["stone"],
+      "description": "A stone altar carved with faded runes. It looks like it was built to hold something precious.",
+      "location": "vault",
+      "flags": {
+        "fixed": true,
+        "supporter": true
+      }
+    },
+    "crown": {
+      "name": "jeweled crown",
+      "synonyms": ["crown"],
+      "adjectives": ["jeweled", "golden"],
+      "description": "A golden crown, set with jewels that catch even the faintest light.",
+      "location": "vault",
+      "flags": {
+        "portable": true
+      }
+    }
+  },
+  "rules": [
+    {
+      "trigger": {"verb": "search", "object": "barrel"},
+      "conditions": [
+        {"flag": "barrel_searched", "equals": false}
+      ],
+      "effects": [
+        {"set_flag": "barrel_searched", "value": true},
+        {"print": "You plunge your hands into the flour and feel something hard. A small brass key!"}
+      ],
+      "stop": false
+    },
+    {
+      "trigger": {"verb": "push", "object": "rug"},
+      "conditions": [
+        {"flag": "rug_moved", "equals": false}
+      ],
+      "effects": [
+        {"set_flag": "rug_moved", "value": true},
+        {"print": "You shove the rug aside. Nothing is hidden underneath after all -- but the flour barrel in the corner looks worth a search."}
+      ],
+      "stop": true
+    },
+    {
+      "trigger": {"verb": "pull", "object": "rug"},
+      "conditions": [
+        {"flag": "rug_moved", "equals": false}
+      ],
+      "effects": [
+        {"set_flag": "rug_moved", "value": true},
+        {"print": "You pull the rug back. Nothing underneath -- but that flour barrel might reward a closer look."}
+      ],
+      "stop": true
+    },
+    {
+      "trigger": {"verb": "take", "object": "crown"},
+      "conditions": [
+        {"object": "crown", "location": "vault"}
+      ],
+      "effects": [
+        {"move": "crown", "to": "inventory"},
+        {"score": 5},
+        {"print": "Taken. The crown is surprisingly heavy with gold."}
+      ],
+      "stop": true
+    },
+    {
+      "trigger": {"verb": "put", "object": "crown", "target": "altar"},
+      "conditions": [
+        {"object": "crown", "location": "inventory"}
+      ],
+      "effects": [
+        {"move": "crown", "to": "on:altar"},
+        {"score": 5},
+        {"print": "You set the jeweled crown upon the stone altar. The runes flare briefly with pale light, then go still."},
+        {"win": "The altar accepts your offering. Somewhere deep in the earth, an old debt is repaid."}
+      ],
+      "stop": true
+    },
+    {
+      "trigger": {"on_turn": true},
+      "conditions": [
+        {"flag": "rug_moved", "equals": false}
+      ],
+      "effects": [
+        {"print": "Somewhere below, you hear water dripping."}
+      ]
+    }
+  ]
+}
