@@ -1,0 +1,199 @@
+# function-views.yaml — Function-based views: Lights / Climate / Energy / Security / Media
+#
+# USAGE: This is a FRAGMENT, not a full dashboard. Each top-level list item below is ONE
+# complete view meant to be appended into an existing dashboard's views: [] list (or a
+# subset of them — pick only the views the user actually wants). Read the current lovelace
+# config first (lovelace/config/get), merge in whichever of these views apply, then
+# lovelace/config/save. Never replace the whole dashboard config. See references/dashboards.md.
+#
+# Every `PLACEHOLDER` entity_id below is fake. Every line needing a real id is flagged
+# `# REPLACE:` — pull real ids from the live entity registry before using this file, and
+# delete any card/section whose domain doesn't exist on this instance (e.g. no energy
+# dashboard configured yet, or no alarm panel installed).
+
+views:
+
+  # ======================================================================================
+  # LIGHTS VIEW — every controllable light, grouped by area
+  # ======================================================================================
+  - type: sections
+    title: Lights
+    path: lights
+    icon: mdi:lightbulb-group
+    sections:
+      - type: grid
+        title: Living Room
+        cards:
+          - type: heading
+            heading: Living Room
+            icon: mdi:sofa
+          - type: tile
+            entity: light.PLACEHOLDER_living_room_main   # REPLACE
+          - type: tile
+            entity: light.PLACEHOLDER_living_room_lamp   # REPLACE
+      - type: grid
+        title: Kitchen
+        cards:
+          - type: heading
+            heading: Kitchen
+            icon: mdi:countertops
+          - type: tile
+            entity: light.PLACEHOLDER_kitchen_main         # REPLACE
+      - type: grid
+        title: Bedroom
+        cards:
+          - type: heading
+            heading: Bedroom
+            icon: mdi:bed
+          - type: tile
+            entity: light.PLACEHOLDER_bedroom_main         # REPLACE
+      # OPTIONAL upgrade (only if HACS + auto-entities confirmed installed):
+      # replaces per-area hand-listing above with a self-maintaining "all lights" card.
+      # - type: grid
+      #   title: All Lights (auto)
+      #   cards:
+      #     - type: custom:auto-entities
+      #       card:
+      #         type: grid
+      #       filter:
+      #         include:
+      #           - domain: light
+
+  # ======================================================================================
+  # CLIMATE VIEW — thermostats + humidifiers + temperature/humidity sensors
+  # ======================================================================================
+  - type: sections
+    title: Climate
+    path: climate
+    icon: mdi:thermostat
+    sections:
+      - type: grid
+        title: Thermostats
+        cards:
+          - type: heading
+            heading: Thermostats
+            icon: mdi:thermostat
+          - type: thermostat
+            entity: climate.PLACEHOLDER_living_room          # REPLACE
+          - type: thermostat
+            entity: climate.PLACEHOLDER_bedroom                # REPLACE
+      - type: grid
+        title: Humidity
+        cards:
+          - type: heading
+            heading: Humidity
+            icon: mdi:water-percent
+          - type: humidifier
+            entity: humidifier.PLACEHOLDER_basement              # REPLACE: delete if none installed
+          - type: gauge
+            entity: sensor.PLACEHOLDER_basement_humidity          # REPLACE
+            min: 0
+            max: 100
+      - type: grid
+        title: Trends
+        cards:
+          - type: heading
+            heading: Trends
+            icon: mdi:chart-line
+          - type: history-graph
+            entities:
+              - sensor.PLACEHOLDER_living_room_temperature        # REPLACE
+              - sensor.PLACEHOLDER_bedroom_temperature             # REPLACE
+
+  # ======================================================================================
+  # ENERGY VIEW — requires the Energy dashboard to be configured (Settings > Energy) first.
+  # These cards read from long-term statistics, NOT a single live entity — if the user
+  # hasn't set up the Energy dashboard yet, tell them that instead of emitting this view.
+  # ======================================================================================
+  - type: sections
+    title: Energy
+    path: energy
+    icon: mdi:lightning-bolt
+    sections:
+      - type: grid
+        title: Today
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Energy Flow
+            icon: mdi:transmission-tower
+          - type: energy-distribution
+            link_dashboard: true
+      - type: grid
+        title: Usage
+        cards:
+          - type: heading
+            heading: Usage
+            icon: mdi:chart-bar
+          - type: energy-date-selection
+          - type: energy-sources-table
+            link_dashboard: true
+
+  # ======================================================================================
+  # SECURITY VIEW — alarm panel, locks, doors/windows, cameras
+  # ======================================================================================
+  - type: sections
+    title: Security
+    path: security
+    icon: mdi:shield-home
+    sections:
+      - type: grid
+        title: Alarm
+        cards:
+          - type: heading
+            heading: Alarm
+            icon: mdi:shield-lock
+          - type: alarm-panel
+            entity: alarm_control_panel.PLACEHOLDER_home    # REPLACE: delete whole section if no alarm panel
+      - type: grid
+        title: Locks & Doors
+        cards:
+          - type: heading
+            heading: Locks & Doors
+            icon: mdi:door
+          - type: tile
+            entity: lock.PLACEHOLDER_front_door                # REPLACE
+          - type: tile
+            entity: binary_sensor.PLACEHOLDER_front_door_contact # REPLACE
+          - type: tile
+            entity: binary_sensor.PLACEHOLDER_back_door_contact  # REPLACE
+      - type: grid
+        title: Cameras
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Cameras
+            icon: mdi:cctv
+          - type: picture-glance
+            camera_image: camera.PLACEHOLDER_front_door         # REPLACE
+            entities:
+              - light.PLACEHOLDER_front_porch_light                # REPLACE: delete if no attached light
+          - type: picture-entity
+            entity: camera.PLACEHOLDER_backyard                   # REPLACE
+
+  # ======================================================================================
+  # MEDIA VIEW — media players across the house
+  # ======================================================================================
+  - type: sections
+    title: Media
+    path: media
+    icon: mdi:speaker
+    sections:
+      - type: grid
+        title: Living Room
+        cards:
+          - type: heading
+            heading: Living Room
+            icon: mdi:television
+          - type: media-control
+            entity: media_player.PLACEHOLDER_living_room_tv       # REPLACE
+      - type: grid
+        title: Whole Home Audio
+        cards:
+          - type: heading
+            heading: Whole Home Audio
+            icon: mdi:speaker-wireless
+          - type: media-control
+            entity: media_player.PLACEHOLDER_kitchen_speaker        # REPLACE
+          - type: media-control
+            entity: media_player.PLACEHOLDER_bedroom_speaker         # REPLACE

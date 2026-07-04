@@ -1,0 +1,76 @@
+# area-view.yaml — Single parameterized area/room view (Sections layout)
+#
+# USAGE: This is a FRAGMENT, not a full dashboard. It's a template for ONE area's own
+# drill-down view — typically reached by tapping an `area` card on the overview, not from
+# the main nav strip (hence `subview: true` below). Read the current lovelace config
+# (lovelace/config/get), APPEND this as one new element of views: [], then
+# lovelace/config/save. Never replace the whole dashboard config. See references/dashboards.md.
+#
+# HOW TO PARAMETERIZE: replace every `PLACEHOLDER_AREA` token with the real area slug/name,
+# and every `PLACEHOLDER_AREA_entity...` with real entity_ids from that area (pulled from
+# the live entity registry — never invent an id). Duplicate this whole file per area, or
+# generate it programmatically per area when building an overview with N area drill-downs.
+# Every placeholder is flagged with a `# REPLACE:` comment.
+
+views:
+  - type: sections
+    title: PLACEHOLDER_AREA_display_name        # REPLACE: e.g. "Living Room"
+    path: PLACEHOLDER_AREA_slug                  # REPLACE: e.g. "living-room" (URL-safe, unique)
+    icon: mdi:PLACEHOLDER_area_icon               # REPLACE: e.g. mdi:sofa
+    subview: true                                 # hides this from the main nav tab strip
+    back_path: /lovelace/home                     # REPLACE: path of the overview view to return to
+
+    badges:
+      - entity: sensor.PLACEHOLDER_AREA_temperature   # REPLACE: area's temperature sensor, or delete
+      - entity: binary_sensor.PLACEHOLDER_AREA_occupancy # REPLACE: area's occupancy sensor, or delete
+
+    sections:
+      # --- All-in-one area summary card: fastest way to cover "everything in this room" ---
+      - type: grid
+        cards:
+          - type: area
+            area: PLACEHOLDER_AREA_slug            # REPLACE: must match a real Area in the registry
+
+      # --- Lighting controls ------------------------------------------------------------
+      - type: grid
+        title: Lights
+        cards:
+          - type: heading
+            heading: Lights
+            icon: mdi:lightbulb-group
+          - type: tile
+            entity: light.PLACEHOLDER_AREA_main_light   # REPLACE
+          - type: tile
+            entity: light.PLACEHOLDER_AREA_lamp          # REPLACE: delete if area has only one light
+
+      # --- Climate -----------------------------------------------------------------------
+      - type: grid
+        title: Climate
+        cards:
+          - type: heading
+            heading: Climate
+            icon: mdi:thermostat
+          - type: thermostat
+            entity: climate.PLACEHOLDER_AREA_climate     # REPLACE: delete section if area has no climate entity
+
+      # --- Media (delete this section if the area has no media_player) -------------------
+      - type: grid
+        title: Media
+        cards:
+          - type: heading
+            heading: Media
+            icon: mdi:speaker
+          - type: media-control
+            entity: media_player.PLACEHOLDER_AREA_speaker  # REPLACE
+
+      # --- Camera / security (delete if not applicable) -----------------------------------
+      - type: grid
+        title: Camera
+        cards:
+          - type: heading
+            heading: Camera
+            icon: mdi:cctv
+          - type: picture-glance
+            camera_image: camera.PLACEHOLDER_AREA_camera    # REPLACE
+            entities:
+              - light.PLACEHOLDER_AREA_porch_light            # REPLACE: delete if no attached light

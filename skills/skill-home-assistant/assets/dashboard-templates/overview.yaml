@@ -1,0 +1,96 @@
+# overview.yaml — Home overview starter (Sections layout)
+#
+# USAGE: This is a FRAGMENT, not a full dashboard. It is one element of a `views:` list.
+# Never replace an existing dashboard config with just this file — read the current
+# lovelace config (lovelace/config/get), APPEND or MERGE this view into views: [],
+# then lovelace/config/save the merged result. See references/dashboards.md §1 and §7.
+#
+# Every `PLACEHOLDER` value below is fake and WILL NOT WORK until replaced with a real
+# entity_id / area slug pulled from this instance's live entity & area registry.
+# Every placeholder line is flagged with a `# REPLACE:` comment — do not skip any of them.
+# Add/remove per-area sections to match the areas that actually exist on this instance.
+
+views:
+  - type: sections
+    title: Home
+    path: home
+    icon: mdi:home
+    header:
+      layout: center
+      badges_position: bottom
+    badges:
+      - entity: weather.PLACEHOLDER_home_weather        # REPLACE: this instance's weather entity
+      - entity: binary_sensor.PLACEHOLDER_anyone_home    # REPLACE: a presence/occupancy binary_sensor
+      - entity: alarm_control_panel.PLACEHOLDER_home     # REPLACE: remove this line if no alarm panel exists
+
+    sections:
+      # --- Quick scenes / most-used controls first (mobile: keep this section short) ---
+      - type: grid
+        title: Quick Scenes
+        cards:
+          - type: heading
+            heading: Quick Scenes
+            icon: mdi:flash
+          - type: tile
+            entity: scene.PLACEHOLDER_good_morning       # REPLACE: a real scene entity, or delete this card
+            icon: mdi:weather-sunset-up
+          - type: tile
+            entity: scene.PLACEHOLDER_movie_time          # REPLACE
+            icon: mdi:movie-open
+          - type: tile
+            entity: scene.PLACEHOLDER_good_night           # REPLACE
+            icon: mdi:weather-night
+
+      # --- Per-area section #1 ---------------------------------------------------------
+      - type: grid
+        title: Living Room
+        cards:
+          - type: heading
+            heading: Living Room
+            icon: mdi:sofa
+          - type: tile
+            entity: light.PLACEHOLDER_living_room_main    # REPLACE
+          - type: tile
+            entity: light.PLACEHOLDER_living_room_lamp    # REPLACE
+          - type: thermostat
+            entity: climate.PLACEHOLDER_living_room        # REPLACE
+
+      # --- Per-area section #2 ---------------------------------------------------------
+      - type: grid
+        title: Kitchen
+        cards:
+          - type: heading
+            heading: Kitchen
+            icon: mdi:countertops
+          - type: tile
+            entity: light.PLACEHOLDER_kitchen_main         # REPLACE
+          - type: tile
+            entity: switch.PLACEHOLDER_kitchen_coffee_maker # REPLACE: delete if no such switch exists
+
+      # --- Per-area section #3 ---------------------------------------------------------
+      - type: grid
+        title: Bedroom
+        cards:
+          - type: heading
+            heading: Bedroom
+            icon: mdi:bed
+          - type: tile
+            entity: light.PLACEHOLDER_bedroom_main         # REPLACE
+          - type: thermostat
+            entity: climate.PLACEHOLDER_bedroom             # REPLACE
+
+      # --- Glanceable status: keep this LAST, it's read-mostly, not tap-heavy ----------
+      - type: grid
+        title: Status
+        cards:
+          - type: heading
+            heading: Status
+            icon: mdi:information-outline
+          - type: tile
+            entity: binary_sensor.PLACEHOLDER_front_door    # REPLACE
+          - type: tile
+            entity: lock.PLACEHOLDER_front_door              # REPLACE
+          - type: gauge
+            entity: sensor.PLACEHOLDER_home_battery_backup   # REPLACE: delete if not applicable
+            min: 0
+            max: 100
