@@ -1,0 +1,26 @@
+{
+  "_comment": "Deny-list for ha_control.py. Fail-closed: if this file is missing, unreadable, or invalid JSON, ha_control.py refuses ALL service calls (reads still work). Patterns are fnmatch-style globs matched against entity_id.",
+  "critical_entity_patterns": [
+    "lock.*",
+    "alarm_control_panel.*",
+    "camera.*",
+    "cover.*",
+    "siren.*",
+    "valve.*",
+    "water_heater.*",
+    "switch.*cully*",
+    "switch.*guest_network*",
+    "switch.*downtime*",
+    "switch.*rachio*",
+    "switch.*1_touch_locking*",
+    "switch.*keypress*"
+  ],
+  "critical_service_patterns": [
+    "homeassistant.restart",
+    "homeassistant.stop",
+    "hassio.*",
+    "supervisor.*"
+  ],
+  "bulk_confirm_threshold": 3,
+  "bulk_hard_cap": 10
+}

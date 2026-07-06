@@ -71,12 +71,27 @@ to any HA install.
   hardware, radios (ZBT-2 / ZWA-2), add-ons, HACS install, or Nabu Casa come
   up.
 
-Scripts (env `HA_URL` + `HA_TOKEN`, or `%USERPROFILE%\.ha-skill\secrets.json`):
+Scripts (env `HA_URL` + `HA_TOKEN` → `%USERPROFILE%\.ha-skill\secrets.json` →
+`C:\Claude\.credentials\homeassistant.json` — all three resolution paths are
+tried in that order, so the skill works against either credential
+convention already in use on this machine):
 
 - `scripts/discover.py` — full read-only inventory → JSON (`--out FILE`).
 - `scripts/validate_yaml.py` — lint automation/dashboard YAML pre-apply
   (`--kind automation|dashboard`, `--live-check`).
 - `scripts/backup.py` — trigger + confirm a Supervisor full backup.
+- `scripts/ha_control.py` — read states/services and CALL services with
+  **dry-run by default**; `--confirm` to execute; a fail-closed guardrail
+  (`scripts/guardrail.json`) blocks critical entities and bulk targets. See
+  rules 20–22 and [references/automations-cookbook.md](references/automations-cookbook.md).
+- `scripts/ha_automation.py` — create/get/edit/delete automations via the
+  config API, with a probe-first check (the endpoint is undocumented and
+  version-coupled) and YAML validation before every write.
+- `tests/test_guardrail.py` — offline proof suite for the guardrail (bulk
+  cap, critical-pattern gate, fail-closed-on-missing-file, and a
+  poisoned-URL test that proves dry-run never touches the network for
+  explicit entity_id targets). Run this before trusting `ha_control.py`
+  against a live instance.
 
 Starter Lovelace fragments (merge, never replace):
 `assets/dashboard-templates/overview.yaml`, `area-view.yaml`,
@@ -132,9 +147,12 @@ verify, show the result. Storage mode → stays UI-editable.
 
 **Stage 6 — Automations.** Propose a ranked shortlist (value ÷ effort) from
 the cookbook patterns that match the inventory — each with a one-line "fits
-you because…". Get confirmation on which to build. Implement with stable
-`id`/`unique_id`, validate (`scripts/validate_yaml.py`, then config check),
-reload, and tell the user how to disable/undo each one.
+you because…". Get confirmation on which to build. Implement with
+`scripts/ha_automation.py create` (validates via `validate_yaml.py`
+internally, probes the config API first, resolves the real entity_id — see
+rule 6), then use `scripts/ha_control.py` for any immediate state changes
+(dry-run first, `--confirm` to apply — rules 20–22), and tell the user how
+to disable/undo each one.
 
 **Stage 7 — Optimization.** Present the
 [references/optimization.md](references/optimization.md) findings (missing
@@ -171,7 +189,14 @@ automation aliases/IDs, backup slug), and exactly how to reverse each change.
    instead of duplicating. Preferred write path: ha-mcp's automation tools,
    or YAML + `automation.reload` (the frontend's
    `POST /api/config/automation/config/<id>` works but is undocumented and
-   version-coupled — see the cookbook §2).
+   version-coupled — see the cookbook §2). **The `id` you set is NOT the
+   entity_id.** The automation entity_id is slugified from `alias`
+   (`id: "foo"` + `alias: "[skill] My Automation"` materializes as
+   `automation.skill_my_automation`, with `unique_id: foo` in the entity
+   registry) — live-verified 2026-07-06 when a poll on `automation.<id>`
+   hung until the real entity_id was resolved via
+   `config/entity_registry/list` matching on `unique_id`. Never assume
+   `automation.<id>`; resolve it (see `ha_automation.py`).
 7. **Secret hygiene.** Never hardcode, echo, or log the long-lived token or
    any credential — scripts read `HA_URL`/`HA_TOKEN` from env or
    `%USERPROFILE%\.ha-skill\secrets.json`; mask tokens as `***` in all output
@@ -222,6 +247,25 @@ automation aliases/IDs, backup slug), and exactly how to reverse each change.
     integration adds — present with impact + effort, apply only what the user
     picks. Batch renames are previewed first (renaming `entity_id`s can break
     existing automations — check references before renaming).
+
+### Service-call control (ha_control.py)
+
+20. **Dry-run is the default; mutation requires `--confirm`.** Critical
+    entities additionally require `--confirm-critical <entity_id>` named
+    individually — no wildcard, no blanket override. Explicit entity_id
+    targets resolve with zero network access, so a dry-run is provably safe
+    even against an unreachable/wrong `HA_URL` (see the poisoned-URL test
+    in `tests/test_guardrail.py`).
+21. **The guardrail fails closed.** If `guardrail.json` (resolved relative
+    to the script file, never cwd) is missing or fails to parse,
+    `ha_control.py` refuses ALL service calls — reads still work. A
+    packaging/path mistake must never silently become "no guardrail."
+22. **Never bulk-toggle.** More than 3 resolved targets in one call needs
+    `--confirm` plus a printed target list; more than 10 targets, or the
+    literal target `all`, is refused outright with **no override flag** —
+    loop over explicit entities if you truly mean it. Targets are expanded
+    (area/label/group → entity_ids) *before* gating, so a group or area
+    hiding a critical entity can't slip past rule 20.
 
 ## Personalization defaults
 
