@@ -70,6 +70,18 @@ Reading the output:
 | B9 | **Repair Python 3.12** (already chipped as a separate task) then rebuild venv with 3.12. | 3.10 fallback works but is EOL Oct 2026 | `py -3.12 --version` OK; venv rebuilt; tests 7/7 |
 | B10 | **Zotero/Obsidian export hook**: push downloaded papers + BibTeX into the SecondBrain vault pipeline. | Ties into existing knowledge-base flow | downloaded paper appears as vault note with citation |
 
+### Field findings — first live run, 2026-07-07 (ADHD query, 5 PDFs delivered)
+
+Real bugs surfaced downloading real papers. All three reduce hit-rate on genuinely-OA papers; none are guardrail violations. Fix with the §3 protocol (edit repo, add a test, deploy, verify).
+
+| # | Bug | Repro | Fix direction | Acceptance |
+|---|---|---|---|---|
+| **B11** | **No fallback when a resolved `pdf_url` 403s/404s.** `download_pdf` uses the first URL (search-provided or Unpaywall's) and gives up on HTTP error instead of trying the rest of the chain. | AAP guideline `10.1542/peds.2011-2654` (gold/bronze OA) → Unpaywall returns the publisher URL that 403s → download fails though OA copies may exist. | On non-200 (esp. 403/404), continue the Unpaywall `oa_locations` list, then CORE/arXiv/EuropePMC, HEAD-verifying each, before returning failure. | The AAP DOI either downloads a real %PDF or reports `pdf_available:false` only after all locations tried (chain_status shows >1 attempt). |
+| **B12** | **Unverified EuropePMC `?pdf=render` URLs.** The europepmc source sets `pdf_url` to `europepmc.org/articles/PMC…?pdf=render` without checking it resolves; works for older PMC items (PMC7330190 ✓) but 404s for many 2026 ones (PMC13253956, PMC5505611, PMC13240010 ✗). | Any recent EuropePMC-only result — the render URL 404s on download. | HEAD-verify the render URL in the source module; if not a PDF, fall back to `fullTextUrlList` OA entry or leave `pdf_url` empty so the resolver keeps looking. | A result's `pdf_url`, when non-empty, HEAD-returns `application/pdf`. |
+| **B13** | **Batch-by-DOI prefers a bot-blocked publisher link over a working PMC copy.** Re-resolving a DOI grabs Unpaywall's publisher `url_for_pdf` (Dovepress/Wiley/SAGE) that 403/404s, when a PMC full-text exists. | `10.2147/ndt.s130444` → Dovepress 404; `10.1002/gps3.70030` → Wiley 403 — both have PMC copies. | Rank `oa_locations` by host friendliness (PMC/repository before publisher) and/or fall through on failure (see B11). | Both DOIs download a real %PDF via the PMC/repository location. |
+
+Practical note for operators until fixed: gold-OA publishers that serve clean PDFs to this toolkit today = **PLOS, Frontiers, Cureus, MDPI, BMC**. Bot-blockers = **Wiley, Dovepress, SAGE, AAP, APA/PsycNet, Cambridge**. When a wanted paper is on a blocker, hand `download_pdf` an explicit PMC/repository `pdf_url`, or fetch the landing page.
+
 ## 5. Hard rules (do not violate, ever)
 
 - **Legal OA only.** Unpaywall→CORE→arXiv→EuropePMC. No Sci-Hub, no paywall bypass, no credential sharing. If no legal PDF: return landing page and say so.
