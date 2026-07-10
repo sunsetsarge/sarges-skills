@@ -28,18 +28,49 @@ MCP_TEMPLATE = TEMPLATES_DIR / "research-access-mcp"
 SKILL_TEMPLATE = TEMPLATES_DIR / "research-access-skill"
 
 
+def _runnable_python(exe) -> bool:
+    """A candidate must actually launch and be >=3.10 — a present-but-broken install
+    (e.g. missing pythonXY.dll) passes an existence check and then crashes venv creation."""
+    if not exe:
+        return False
+    try:
+        out = subprocess.run(
+            [str(exe), "-c", "import sys; print(sys.version_info[:2] >= (3, 10))"],
+            capture_output=True, text=True, timeout=15,
+        )
+        return out.returncode == 0 and out.stdout.strip() == "True"
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
 def find_python() -> str:
-    """Best-effort search for a Python 3.10+ interpreter."""
-    candidates = [
-        r"C:\Users\blain\AppData\Local\Programs\Python\Python312\python.exe",
+    """Best-effort search for a working Python 3.10+ interpreter."""
+    candidates = []
+    # Windows py launcher, newest first
+    for ver in ("3.13", "3.12", "3.11", "3.10"):
+        py = shutil.which("py")
+        if py:
+            try:
+                out = subprocess.run(
+                    [py, f"-{ver}", "-c", "import sys; print(sys.executable)"],
+                    capture_output=True, text=True, timeout=15,
+                )
+                if out.returncode == 0 and out.stdout.strip():
+                    candidates.append(out.stdout.strip())
+            except (OSError, subprocess.TimeoutExpired):
+                pass
+    candidates += [
         r"C:\AI-Shared\python.exe",
         shutil.which("python"),
         shutil.which("python3"),
+        sys.executable,
     ]
     for c in candidates:
-        if c and Path(c).exists():
+        if c and Path(c).exists() and _runnable_python(c):
             return c
-    return sys.executable
+    raise SystemExit(
+        "No working Python 3.10+ interpreter found. Pass one explicitly with --python."
+    )
 
 
 def copy_mcp_template(target: Path) -> None:
