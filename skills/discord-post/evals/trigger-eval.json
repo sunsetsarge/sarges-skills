@@ -1,0 +1,23 @@
+[
+  {"query": "post this in my ideas channel on discord: 'first Shallotte vintage-ad mockups are up - want feedback before I push to Etsy'", "should_trigger": true},
+  {"query": "drop a note in #notes that the Printify to Shopify sync finished but 3 listings errored out (error 8253)", "should_trigger": true},
+  {"query": "announce in general that saspansalt.com is finally live", "should_trigger": true},
+  {"query": "can u send this to my discord server real quick - put it in to-do: 'order more matte PLA for the P1S'", "should_trigger": true},
+  {"query": "message the apis channel on my discord that the OpenAlex key got rotated this morning", "should_trigger": true},
+  {"query": "hey post 'found the 1910 census record for John Morris in Parabuty' into my genealogy notes on discord", "should_trigger": true},
+  {"query": "write a one-line status that batch 4 of the Brunswick ads is ready for review and put it in ads-vintage", "should_trigger": true},
+  {"query": "broadcast to my server that the nightly organizer job is done and everything is green", "should_trigger": true},
+  {"query": "share in the company-info channel that the bot is now C1-10P and it's on the SaspanSalt server", "should_trigger": true},
+  {"query": "put this in my discord notes channel: remember to check the Etsy demand numbers on the 15th", "should_trigger": true},
+
+  {"query": "log this youtube video to my discord - https://youtu.be/dQw4w9WgXcQ - it's the one about faceless channels", "should_trigger": false},
+  {"query": "create a new channel called launches in my discord and put it under the Links category", "should_trigger": false},
+  {"query": "add a moderator role on my discord server with manage-messages and kick perms", "should_trigger": false},
+  {"query": "what were the last 10 messages in my #ideas channel? i wanna see what i brain-dumped yesterday", "should_trigger": false},
+  {"query": "did anyone reply in general on discord today? check for me", "should_trigger": false},
+  {"query": "post this update to my substack draft about the Saspan Salt launch", "should_trigger": false},
+  {"query": "add this note to my confluence project log page for the newspaper cropper", "should_trigger": false},
+  {"query": "ingest this youtube video and drop it in the links-youtube channel with a description", "should_trigger": false},
+  {"query": "is my discord bot actually online right now? run the healthcheck for me", "should_trigger": false},
+  {"query": "set the verification level on my discord server to medium so new members need a verified email", "should_trigger": false}
+]
