@@ -1,0 +1,24 @@
+{
+  "skill_name": "pixel-art-studio",
+  "note": "Manually run + verified in the building session (not via skill-creator's subagent+browser-viewer loop) -- this is a personal single-user utility skill, and the automated trigger-optimization eval (run_loop.py/run_eval.py) is known-broken in local-agent-mode sessions on this machine (nested `claude -p` calls are unauthenticated here; see memory reference-skill-creator-windows). Re-run these manually after any change to SKILL.md or scripts/.",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "make me a 64x64 pixel art knight sprite with transparent background",
+      "expected_output": "A QC-passing (true-grid, <=32 colors, clean binary alpha, verified crisp upscale) knight sprite PNG, produced with no manual steps beyond following SKILL.md.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "here's an image I got from ChatGPT, can you turn it into real pixel art [attached PNG]",
+      "expected_output": "Recognizes this as Lane C (already-styled but off-grid), runs --method unfake (no pixeloe pass), produces a QC-passing true-grid PNG.",
+      "files": ["example off-grid AI-generated pixel-art-styled PNG"]
+    },
+    {
+      "id": 3,
+      "prompt": "I need a 16-bit style tileset tile for grass, tileable, game asset",
+      "expected_output": "Generates via Lane A or B, pixelizes, and either notes the source doesn't yet handle true seamless tiling (out of Phase 1 scope) or produces a reasonable single-tile QC-passing result -- should not silently claim seamless tiling works if it wasn't verified.",
+      "files": []
+    }
+  ]
+}

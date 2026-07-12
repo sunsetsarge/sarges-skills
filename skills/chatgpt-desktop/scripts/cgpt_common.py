@@ -68,26 +68,34 @@ def find_chatgpt_window(timeout=12.0):
             except Exception:
                 fg = None
             matches = []
+            sized_matches = []
             for w in Desktop(backend='uia').windows():
                 try:
                     pid = w.element_info.process_id
                 except Exception:
                     pid = None
-                if not _pid_exe(pid).lower().endswith('chatgpt.exe'):
+                exe_name = _pid_exe(pid).lower().rsplit('\\', 1)[-1]
+                # Matches "ChatGPT.exe" and rebrand variants like "ChatGPT Classic.exe".
+                if not (exe_name.startswith('chatgpt') and exe_name.endswith('.exe')):
                     continue
+                matches.append(w)
                 r = w.element_info.rectangle
+                # A minimized/tray-only window reports a 0-size rect in UIA; still
+                # track it as a fallback so a fully-minimized app can be restored
+                # by focus_window() instead of never being found at all.
                 if (r.right - r.left) > 100 and (r.bottom - r.top) > 100:
-                    matches.append(w)
-            if matches:
+                    sized_matches.append(w)
+            candidates = sized_matches or matches
+            if candidates:
                 # Prefer the foreground ChatGPT window if multiple are open.
                 if fg:
-                    for w in matches:
+                    for w in candidates:
                         try:
                             if _win_handle(w) == fg:
                                 return w
                         except Exception:
                             pass
-                return matches[0]
+                return candidates[0]
         except Exception:
             pass
         if time.time() >= deadline:

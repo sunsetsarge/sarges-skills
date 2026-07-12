@@ -1,0 +1,19 @@
+{
+  "1": { "class_type": "LoadImage", "_meta": {"title": "Load Generated Image"}, "inputs": {
+    "image": "REPLACE_WITH_STAGED_FILENAME"
+  }},
+  "2": { "class_type": "RMBG", "_meta": {"title": "Remove Background (INSPYRENET)"}, "inputs": {
+    "image": ["1", 0],
+    "model": "INSPYRENET",
+    "sensitivity": 1.0,
+    "process_res": 1024,
+    "mask_blur": 0,
+    "mask_offset": 0,
+    "invert_output": false,
+    "refine_foreground": true,
+    "background": "Alpha"
+  }},
+  "4": { "class_type": "SaveImage", "_meta": {"title": "Save Image"}, "inputs": {
+    "images": ["2", 0], "filename_prefix": "pixelart_studio_rmbg"
+  }}
+}

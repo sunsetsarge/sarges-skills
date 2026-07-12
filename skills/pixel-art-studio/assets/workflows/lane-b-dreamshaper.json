@@ -1,0 +1,27 @@
+{
+  "3": { "class_type": "KSampler", "_meta": {"title": "KSampler (25/7.0/dpmpp_2m/karras)"}, "inputs": {
+    "seed": 42, "steps": 25, "cfg": 7.0,
+    "sampler_name": "dpmpp_2m", "scheduler": "karras", "denoise": 1.0,
+    "model": ["4", 0], "positive": ["6", 0], "negative": ["7", 0], "latent_image": ["5", 0]
+  }},
+  "4": { "class_type": "CheckpointLoaderSimple", "_meta": {"title": "Load dreamshaperPixelart_v10"}, "inputs": {
+    "ckpt_name": "dreamshaperPixelart_v10.safetensors"
+  }},
+  "5": { "class_type": "EmptyLatentImage", "_meta": {"title": "Empty Latent 512x512"}, "inputs": {
+    "width": 512, "height": 512, "batch_size": 1
+  }},
+  "6": { "class_type": "CLIPTextEncode", "_meta": {"title": "Positive Prompt"}, "inputs": {
+    "clip": ["4", 1],
+    "text": "pixel art, knight character, front facing, standing pose, 16-bit SNES RPG sprite style, flat colors, no anti-aliasing, crisp pixel grid, solid single-color background, full body, game asset"
+  }},
+  "7": { "class_type": "CLIPTextEncode", "_meta": {"title": "Negative Prompt"}, "inputs": {
+    "clip": ["4", 1],
+    "text": "blurry, anti-aliased, smooth gradient, photorealistic, 3d render, text, watermark, soft shading, jpeg artifacts, scenic background, complex background"
+  }},
+  "8": { "class_type": "VAEDecode", "_meta": {"title": "VAE Decode"}, "inputs": {
+    "samples": ["3", 0], "vae": ["4", 2]
+  }},
+  "9": { "class_type": "SaveImage", "_meta": {"title": "Save Image"}, "inputs": {
+    "images": ["8", 0], "filename_prefix": "pixelart_studio_lane_b"
+  }}
+}
