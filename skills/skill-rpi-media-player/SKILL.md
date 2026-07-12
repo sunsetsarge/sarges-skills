@@ -3,16 +3,16 @@ name: skill-rpi-media-player
 description: >-
   Design, build, and maintain a Raspberry Pi home media playback system — one Pi per TV,
   playing video files stored on a Windows PC over the LAN, with a couch Kodi UI and TV-remote
-  (HDMI-CEC) control. Guides the architecture choice (LibreELEC+Kodi direct SMB vs Jellyfin
-  vs Plex), picks the Pi board for the codec mix (Pi 4 vs Pi 5 hardware decode), ships a
-  one-action PowerShell script for a secure read-only Windows SMB share, and covers imaging,
-  Kodi setup, multi-TV cloning, and troubleshooting. USE THIS SKILL whenever the user
-  mentions: raspberry pi media player, pi 4, pi 5, kodi, libreelec, osmc, jellyfin, plex,
-  media server, HTPC, home theater PC, stream video to a TV, play PC videos on the TV, SMB
-  share, NFS, DLNA, CEC, HDMI remote, or cord-cutting with their own files — even without
-  saying "media player" (e.g. "watch the videos on my PC from the living-room TV", "add
-  another TV to my Kodi setup"). Also for maintenance: adding a TV, SMB browse failures,
-  stutter/codec problems, watched-state sync.
+  (HDMI-CEC) control — OR one Pi as a headless Plex SERVER feeding Apple TV / Infuse /
+  smart-TV clients. Guides the architecture choice (LibreELEC+Kodi vs Jellyfin vs Plex vs
+  Pi-as-server), picks the board (Pi 4 vs Pi 5 decode), ships a one-action PowerShell script
+  for a secure read-only Windows SMB share, and covers imaging, Kodi setup, multi-TV cloning,
+  and troubleshooting. USE THIS SKILL whenever the user mentions: raspberry pi media player,
+  pi 4, pi 5, kodi, libreelec, osmc, jellyfin, plex, media server, HTPC, apple tv, infuse,
+  stream video to a TV, SMB share, NFS, DLNA, CEC, or cord-cutting with their own files —
+  even without saying "media player" ("watch my PC videos on the living-room TV", "add
+  another TV"). Also maintenance: SMB browse failures, home videos choppy/won't play
+  (VFR/HEVC), stutter, watched-state sync.
 ---
 
 # Raspberry Pi Media Player Builder
@@ -64,6 +64,11 @@ Short version:
 - **A + shared MySQL/MariaDB library DB** is the "sync without a media server" advanced
   path — documented in the LibreELEC reference. Offer it only to users comfortable running
   a database; Jellyfin is easier for the same outcome.
+- **D — Pi as headless Plex SERVER, TVs bring their own player (Apple TV/Infuse, sticks,
+  smart TVs).** When the TVs already have good players, invert the whole design: don't put
+  a Pi at each TV — one Pi + USB drive serves the house, the TV devices decode. Golden rule:
+  the Pi must NEVER transcode. Full build/maintenance/VFR-home-video playbook:
+  [references/plex-server-appletv.md](references/plex-server-appletv.md). Proven live 2026-07.
 
 ## Step 2 — Pick the hardware (one Pi per TV)
 
@@ -170,6 +175,14 @@ hardware decode on either. High-bitrate 4K over Wi-Fi will stutter regardless of
 12. **Direct-play means the PC does near-zero work under Jellyfin** for H.264/HEVC files a
     Pi can decode. If the PC fans spin up during playback, something is transcoding —
     find out why (usually subtitles burn-in or an exotic codec), don't buy a GPU first.
+13. **"Movies play fine but home videos don't" = a transcode problem, always.** Phone
+    footage is HEVC + variable-frame-rate and forces server transcodes a Pi can't do
+    (no HEVC encoder). Fix by re-encoding to CFR H.264 on a real PC — recipe in
+    [references/plex-server-appletv.md](references/plex-server-appletv.md) §4.
+14. **In the server topology (D), the Pi must never transcode or analyze** — disable
+    Plex's BIF/intro/credits/loudness/deep-analysis generators, use Infuse as the player,
+    and do any re-encoding on an x86 box. `vcgencmd get_throttled ≠ 0x0` on a serve-only
+    Pi means a hidden job is violating this.
 
 ## Maintenance
 
