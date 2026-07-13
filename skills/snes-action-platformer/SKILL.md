@@ -66,7 +66,7 @@ before shipping anything, and never put "Mega Man" in a title or store page.
 | Defining weapons/enemies/stages/bosses as data | [godot/data-resources.md](references/godot/data-resources.md) + the four `*_data.gd` templates |
 | Camera behavior | [godot/camera.md](references/godot/camera.md) + [templates/camera_controller.gd](references/godot/templates/camera_controller.gd) |
 | Damage, hurtbox/hitbox, projectiles, weapon flow | [godot/combat.md](references/godot/combat.md) + `projectile*.gd`, `hurtbox.gd`, `hitbox.gd` templates |
-| Speccing sprites or audio for an artist/musician (or AI gen) | [assets/spritesheet-spec.md](assets/spritesheet-spec.md), [assets/audio-spec.md](assets/audio-spec.md) |
+| Speccing sprites or audio for an artist/musician, or generating with AI (`pixel-art-studio` skill) | [assets/spritesheet-spec.md](assets/spritesheet-spec.md), [assets/audio-spec.md](assets/audio-spec.md) |
 | Adding a stage / boss / weapon to an existing game | [checklists/new-stage.md](checklists/new-stage.md), [checklists/new-boss.md](checklists/new-boss.md), [checklists/new-weapon.md](checklists/new-weapon.md) |
 | Hitting a weird bug (jitter, eaten jumps, stuck knockback...) | [gotchas.md](gotchas.md) — check here FIRST; most feel bugs are numbered entries |
 

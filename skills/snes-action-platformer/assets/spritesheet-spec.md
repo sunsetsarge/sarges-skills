@@ -2,6 +2,22 @@
 
 This document specifies the **grid, animation list, palette discipline, and export conventions** an artist or AI image pipeline must hit for the player and enemy sheets. It does not contain art direction (that is a separate visual-style pass) — it exists so any sheet dropped into `references/godot/templates/` slots into the state machine and `AnimatedSprite2D`/`AnimationPlayer` setup without rework.
 
+**For "(or AI gen)": use the `pixel-art-studio` skill.** It owns ComfyUI's
+pixel-art generation lanes plus a grid-snap/quantize post-process that
+verifies the output is an actual low-color true-grid image (not just
+"blocky-looking") — map its output to this spec: `--target-size` near the
+character's ~30px in-cell height, `--colors 15` to match the palette
+guidance below (not its own 32 default), and generate at the base right-
+facing orientation per the Pivot/facing rule. **This is a good match for the
+animation-list need specifically**: pixel-art-studio's Phase 2 found that
+one-shot 8-direction rotation sheets don't work locally (models repeat the
+same pose across cells), but single-pose edits *off one reference image*
+(`scripts/comfy_edit.py`, Qwen-Edit-2511) genuinely do — which is exactly
+this spec's shape (one facing, multiple animation-state poses: idle/run/
+jump/dash/etc.), not the direction-rotation case that fails. Generate the
+base idle pose, then edit-pass each subsequent animation state off that same
+reference to hold identity across the strip.
+
 ## Player frame grid
 
 - **Frame cell: 48x48 px**, uniform grid, every animation on the same cell size. Do not vary cell size per animation — Godot `SpriteFrames`/`AtlasTexture` regions and hitbox-authoring both assume a fixed cell.

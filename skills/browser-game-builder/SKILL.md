@@ -94,8 +94,23 @@ Convention (do not deviate — the scripts and every reference assume it):
 
 Generation → integration:
 1. **Generate a 3×3 sheet** (8 facings around an empty center cell) on a plain
-   white background. Any image model works (ComfyUI, Stability, DALL·E/ChatGPT).
-   One sheet per unit; keep the same camera angle across all cells.
+   white background. Any image model works (ComfyUI, Stability, DALL·E/ChatGPT)
+   for normal illustrated sprites. **For true low-color pixel-art style
+   specifically, use the `pixel-art-studio` skill instead of generating
+   directly** — it owns the ComfyUI pixel-art lanes and a grid-snap/quantize
+   post-process that a raw generation doesn't have on its own (a plain
+   "pixel art style" prompt looks blocky but isn't actually a true grid).
+   Its own sheet-slicing pipeline (`slice_sheet.py`) is a pixel-art-aware
+   fork of this skill's `slice_sprites.py` (NEAREST not LANCZOS, binarized
+   alpha) — use that instead of this skill's slicer when the source went
+   through pixel-art-studio, then come back here for `verify_facing.py`
+   (identical in both skills) and the rest of this pipeline. One sheet per
+   unit; keep the same camera angle across all cells.
+   **Known limitation (either generation path):** no local model reliably
+   varies a character's pose across the 8 cells from one prompt — expect
+   composition to work and direction content to repeat the same pose;
+   pixel-art-studio's `references/sprite-sheets.md` has the full writeup and
+   a PixelLab.ai buy-gate recommendation if you need this solved for real.
 2. **Slice** with `scripts/slice_sprites.py` — removes the white background with a
    soft luminance/saturation key, cuts the 9 cells, maps the 8 outer cells to
    compass directions, trims each to its content, normalizes to a uniform height,

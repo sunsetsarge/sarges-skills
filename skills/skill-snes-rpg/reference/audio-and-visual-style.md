@@ -119,6 +119,18 @@ NOT on tiles.
 
 ### 9. Sprites without image files
 
+This skill's default is hand-coded, not generated — small enough sprites
+(16×24-ish) that a human-editable, diffable, zero-dependency palette-index
+string beats a PNG pipeline for this genre's normal scope. If the design
+calls for something outside that scope (richer battle/dialogue portraits,
+a title screen, box art — real illustrated pixel art rather than tiny
+in-engine sprites), the `pixel-art-studio` skill is the tool: it owns
+ComfyUI's pixel-art generation lanes plus a grid-snap/quantize verification
+pass. Its PNG output doesn't auto-convert into the palette-index-string
+format below — that'd need a manual extract-palette-and-re-index pass —
+so reach for it for standalone art assets, not as a drop-in replacement for
+this section's sprite-authoring approach.
+
 Encode sprites as palette-index strings, one char per pixel, exactly like map
 layouts — human-editable and diffable:
 

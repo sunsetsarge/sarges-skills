@@ -198,6 +198,36 @@ subsequent passes. For a full 8-direction × multi-frame animation matrix,
 PixelLab.ai is still the more reliable bet; see `references/sprite-sheets.md`
 for the full writeup and when to reach for which.
 
+## Worked example: an asset request for a game project
+
+A concrete pattern, using Bounty Hunter X (a `snes-action-platformer`-built
+Godot 4 Mega Man X-style game) as the example — the same shape applies to
+any consumer project that specs sprites via that skill's
+`assets/spritesheet-spec.md`:
+
+> "I need a new enemy sprite for Bounty Hunter X — a small hovering drone
+> turret, idle + a 2-frame fire animation, matching the fodder-enemy spec
+> (16×16, ~15 colors)."
+
+1. Read the consuming skill's own spec first (here,
+   `snes-action-platformer/assets/spritesheet-spec.md`'s Enemy sizes table
+   and Palette guidance) — don't guess resolution/color-budget/facing
+   conventions, they're already decided per-project.
+2. Generate via Lane B (`comfy_submit.py`, single sprite — this is a static
+   pose request, not a sheet) with the project's exact vocabulary: "pixel
+   art hovering drone turret, small fodder enemy, 16-bit style, flat colors,
+   no anti-aliasing, solid single-color background, game asset."
+3. `pixelize.py --target-size 16 --colors 15 --alpha` (spec's numbers, not
+   this skill's own 64/32 defaults).
+4. For the fire-animation second frame: `comfy_edit.py` against the idle
+   generation, instruction "the turret's barrel glowing and extended,
+   mid-fire, same turret, same colors, same background" — the proven
+   single-pose-edit lever, not a multi-panel sheet attempt.
+5. `qc_check.py` both frames; only then hand them back to the
+   `snes-action-platformer` session to slot into its `AnimatedSprite2D`
+   setup per the spec's export conventions (feet-center origin, right-facing
+   only, single sheet per entity).
+
 ## Handoffs
 
 - ComfyUI submission plumbing, model routing, VRAM/recovery management,
