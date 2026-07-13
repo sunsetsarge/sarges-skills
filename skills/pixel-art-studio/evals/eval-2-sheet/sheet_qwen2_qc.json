@@ -1,0 +1,37 @@
+{
+  "grid_file": "C:\\claude\\sarges-skills\\skills\\pixel-art-studio\\evals\\eval-2-sheet\\sheet_qwen2_grid.png",
+  "final_file": "C:\\claude\\sarges-skills\\skills\\pixel-art-studio\\evals\\eval-2-sheet\\sheet_qwen2_final.png",
+  "grid_size": [
+    222,
+    222
+  ],
+  "final_size": [
+    444,
+    444
+  ],
+  "true_grid": {
+    "runs_based_scale": 1,
+    "edge_aware_scale": 22,
+    "pass": true,
+    "note": "edge_aware_detect disagreed (see references/qc.md) -- treated as a known false-positive, not a failure"
+  },
+  "color_count": {
+    "count": 32,
+    "max_allowed": 32,
+    "pass": true
+  },
+  "alpha_clean": {
+    "has_alpha": true,
+    "unique_alpha_values": [
+      255
+    ],
+    "pass": true
+  },
+  "crisp_upscale": {
+    "scale_factor": 2,
+    "all_blocks_uniform": true,
+    "matches_grid_pixels": true,
+    "pass": true
+  },
+  "pass": true
+}

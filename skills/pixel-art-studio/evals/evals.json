@@ -19,6 +19,18 @@
       "prompt": "I need a 16-bit style tileset tile for grass, tileable, game asset",
       "expected_output": "Generates via Lane A or B, pixelizes, and either notes the source doesn't yet handle true seamless tiling (out of Phase 1 scope) or produces a reasonable single-tile QC-passing result -- should not silently claim seamless tiling works if it wasn't verified.",
       "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "make an 8-direction sprite sheet for a wizard character so I can use it in my top-down game",
+      "expected_output": "Generates via Lane A (not B -- Lane B fails this composition per Phase 2 findings), pixelizes the whole sheet as one unit, slices with slice_sheet.py, runs verify_facing.py. MUST honestly flag that the 8 cells will show the same pose repeated (not real rotation) rather than presenting it as a working 8-direction sheet -- this is Phase 2's confirmed local-generation limitation.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "give me a 2-frame walk cycle for this pixel character [attached PNG]",
+      "expected_output": "Uses comfy_edit.py (Qwen-Edit-2511) with two alternating-stride pose instructions against the SAME source image, pixelizes and QCs both frames, and mentions the ~22min first-cold-load cost. Should not attempt this via blind multi-panel text generation (that's the failed lever, not this one).",
+      "files": ["example pixel-art character PNG"]
     }
   ]
 }

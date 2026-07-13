@@ -1,6 +1,6 @@
 ---
 name: pixel-art-studio
-description: Generate game-usable, true-grid pixel art (character sprites, tiles, icons) using the local ComfyUI install, with a Python post-process pipeline that turns any AI generation into authentic low-color pixel art -- verified programmatically, not eyeballed. Use this whenever the user asks for pixel art, a sprite, a tileset, an 8-bit or 16-bit game asset, a spritesheet frame, or retro/SNES-style game art, even if they don't name a tool or resolution. Also use it to clean up an existing "pixel-art-ish" image (e.g. from ChatGPT/DALL-E) into a true grid. NOT for photorealistic or non-pixel-style image generation (comfyui-studio), and NOT yet for multi-frame animation or 8-direction sheets (that's a planned Phase 2 -- say so rather than attempting it).
+description: Generate game-usable, true-grid pixel art (character sprites, tiles, icons, 8-direction sprite sheets) using the local ComfyUI install, with a Python post-process pipeline that turns any AI generation into authentic low-color pixel art -- verified programmatically, not eyeballed. Use this whenever the user asks for pixel art, a sprite, a tileset, an 8-bit or 16-bit game asset, a spritesheet, or retro/SNES-style game art, even if they don't name a tool or resolution. Also use it to clean up an existing "pixel-art-ish" image (e.g. from ChatGPT/DALL-E) into a true grid, and to slice a generated 3x3 direction sheet into 8 game-ready frames. NOT for photorealistic or non-pixel-style image generation (comfyui-studio). Direction-accurate 8-way ROTATION SHEETS are not reliably achievable via one-shot generation (models fake the composition but repeat the same pose in every cell) -- say so honestly. Single-POSE EDITS off one reference image (walk/idle frames via Qwen-Edit-2511) DO work, verified end to end -- see references/sprite-sheets.md for both findings and the PixelLab.ai buy-gate recommendation for full animation matrices.
 ---
 
 # Pixel Art Studio
@@ -145,14 +145,58 @@ native grid resolution and color count from the QC report. If QC failed,
 say so plainly and either retry with a different `--method`/`--colors`, or
 run RMBG first if it hasn't been tried.
 
-## What this skill does NOT do yet
+## 8-direction sprite sheets
 
-Multi-frame sheets (8-direction character sheets, walk cycles) are a planned
-Phase 2, not built. If asked for a spritesheet or animation, say that's not
-implemented yet rather than attempting an ad-hoc version — the intended path
-reuses `browser-game-builder`'s `slice_sprites.py` / `verify_facing.py` plus
-a PixelLab.ai API buy-option for skeleton animation (Blaine-gated), per
-`Projects\PixelArt_Studio\PLAN.md` Phase 2.
+**Generate with Lane A (Qwen), not Lane B.** dreamshaperPixelart_v10 doesn't
+understand "reference sheet" composition — three independent attempts
+produced a map, a sheet of different character designs, and a crowd scene.
+Qwen reliably produces a clean 3x3 grid with a consistent character across
+cells. Full findings, including the honest limitation below, in
+`references/sprite-sheets.md`.
+
+```bash
+# 1. Generate the sheet (Lane A, white background, empty center cell)
+C:\AI-Shared\python.exe scripts\comfy_submit_template.py assets\workflows\lane-a-qwen.json --prompt-node 5 --prompt "3x3 grid sprite sheet, plain white background, empty center cell, same character in every outer cell, 8 different facing directions..." --seed-node 8 --seed 300 -o sheet.png
+
+# 2. Pixelize the WHOLE sheet as one unit -- keeps one unified palette/grid
+#    across all 8 frames. Scale --target-size up ~3x your usual single-sprite size.
+C:\AI-Shared\python.exe scripts\pixelize.py sheet.png --method pixeloe --target-size 192 --colors 32
+
+# 3. Slice into 8 directional frames (NOT browser-game-builder's slice_sprites.py --
+#    this skill's own slice_sheet.py, which uses NEAREST not LANCZOS and binarizes
+#    alpha, both required to keep true-grid QC passing)
+C:\AI-Shared\python.exe scripts\slice_sheet.py sheet_grid.png knight --out assets
+
+# 4. VERIFY FACING -- do not skip. Frame 0 must point right, frame 6 up.
+C:\AI-Shared\python.exe scripts\verify_facing.py knight --frames 0-7 --assets assets
+# If wrong: re-run slice_sheet.py with --flip (180°) or --mirror (E/W swap)
+```
+
+**Honest limitation: direction content, not just composition, is unsolved
+locally.** Every generation attempt that got the grid layout right (Lane A)
+still rendered the *same front-facing pose in all 8 cells* — no genuine
+back/side/rotated views, confirmed across two separate prompt strategies
+including an extremely explicit panel-by-panel description. This isn't a
+prompting problem to keep iterating on; standard text-to-image models don't
+have real pose/3D understanding. Tell the user this plainly rather than
+shipping a sheet that only *looks* like it has 8 directions. The next lever
+to try is `scripts/comfy_edit.py` (Qwen-Edit-2511 pose edits off a single
+reference) — see `references/sprite-sheets.md` for what's been tried and the
+PixelLab.ai buy-gate recommendation for production work.
+
+## Walk/idle animation
+
+Unlike direction sheets, **single-pose edits via `scripts/comfy_edit.py`
+(Qwen-Edit-2511) genuinely work**: two independent edit passes against the
+same reference image ("left leg forward" / "right leg forward") produced a
+real alternating stride, both frames QC-passing, identity preserved. This
+conditions on an actual reference image rather than blind multi-panel text
+generation, which is why it succeeds where the direction-sheet approach
+doesn't. Only tested at 2 frames so far and not across all 8 facings —
+budget the first edit pass's ~22 min cold load, then expect faster
+subsequent passes. For a full 8-direction × multi-frame animation matrix,
+PixelLab.ai is still the more reliable bet; see `references/sprite-sheets.md`
+for the full writeup and when to reach for which.
 
 ## Handoffs
 

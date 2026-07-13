@@ -65,15 +65,22 @@ def run_unfake(input_path: Path, out_path: Path, colors: int, alpha: bool,
 
 
 def run_unfake_safe(input_path: Path, out_path: Path, colors: int, alpha: bool,
-                     palette: Path | None, min_dim: int = 8) -> bool:
+                     palette: Path | None, min_dim: int = 8, max_collapse_ratio: int = 8) -> bool:
     """unfake's scale auto-detect can be fooled by a large uniform region (e.g.
-    a flat-color background dominating the frame) into wildly over-detecting
-    scale, collapsing a real sprite down to a degenerate few-pixel/single-color
-    result (hit in this skill's own acceptance test: a 65x65 pixeloe output
-    with a big flat gray background collapsed to 3x3/1-color). If the auto-
-    detected result looks degenerate, retry once trusting pixeloe's own
-    downscale (manual scale=1) instead of unfake's second-guess. Returns True
-    if the fallback was used.
+    a flat-color background dominating the frame, or a multi-panel sheet with
+    wide white margins) into wildly over-detecting scale, collapsing a real
+    sprite/sheet down to a degenerate result. Two confirmed cases: a 65x65
+    single-sprite pixeloe output with a flat gray background collapsed to
+    3x3/1-color; a 222x222 3x3 sheet (white-heavy margins around each cell)
+    collapsed to 9x9 -- not caught by an absolute min-size check (9 >= 8) but
+    obviously unusable (3x3 px per cell). So: degenerate is either an absolute
+    floor (min_dim) OR the output shrinking more than max_collapse_ratio
+    relative to the input -- pixeloe's own downscale already did the real
+    sizing work, so unfake collapsing far beyond that (a legitimate residual
+    pattern is usually <5x per Phase 0/1 data) is the signal something's
+    wrong, not a genuine finer grid. If the auto-detected result looks
+    degenerate, retry once trusting pixeloe's own downscale (manual scale=1)
+    instead of unfake's second-guess. Returns True if the fallback was used.
 
     Callers (converge_grid) may pass input_path == out_path to reprocess a
     file in place -- back it up first, since the initial (possibly-collapsing)
@@ -83,8 +90,10 @@ def run_unfake_safe(input_path: Path, out_path: Path, colors: int, alpha: bool,
         backup = out_path.with_name(out_path.name + ".bak")
         shutil.copy2(input_path, backup)
     try:
+        in_size = min(Image.open(backup or input_path).size)
         run_unfake(input_path, out_path, colors, alpha, palette)
-        if min(Image.open(out_path).size) < min_dim:
+        out_size = min(Image.open(out_path).size)
+        if out_size < min_dim or out_size * max_collapse_ratio < in_size:
             run_unfake(backup or input_path, out_path, colors, alpha, palette, manual_scale=1)
             return True
         return False
