@@ -1,6 +1,46 @@
 # Genealogy Toolbox — site-by-site playbooks
 
-Validated procedures from real sessions (2026-05-09/10). Read the entry before using a site — most have a trap.
+Validated procedures from real sessions (2026-05-09/10 incl. the two pedigree sweeps). Read the entry before using a site — most have a trap.
+
+## Multi-agent sweep pattern (validated at scale, 48 researchers)
+
+- **Architecture:** Workflow tool, waves of Sonnet researchers (1 ancestor or couple each, structured-output schema) piped into Opus adversarial verifiers for any finding that is <high confidence, conflicts with tree, or cites user-generated sites. Loop waves with NEW angles until dry; main loop analyzes between waves.
+- **Verification is not optional:** across 2 waves, Opus killed 7+ FABRICATED findings — invented Find A Grave memorial IDs, nonexistent index rows, wrong-state same-name people. Never plan on unverified agent prose.
+- **Workflow gotchas:** `args` may arrive as a JSON string — always `typeof args === 'string' ? JSON.parse(args) : args`. Workflow output file = `{summary, agentCount, logs, result, totalTokens}` dict; per-agent raw results in the run's `journal.jsonl` (`type:"result"` lines, keys are hashes — pair via the final result array instead). Failed agents (API 500s) → resume with same scriptPath+resumeFromRunId+args; research replays from cache.
+- **Prompt rules that matter:** forbid Agent tool + browser tools + idling; cap WebSearch (~8/agent — the 200-call session budget is SHARED and exhausts); require fetched-URL citations; "never cite a memorial you could not open"; honest dead_ends are valid output.
+- **Project convention:** `Projects\Genealogy_Pedigree_Sweep[_Name]\` with PLAN.md, STATE.md, REPORT.md, pedigree.json (ahnentafel + completeness scores), findings/ahn_<n>[_wN].json.
+
+## Agent-vs-browser access map (2026-05 reality)
+
+| Blocked for agents (403/login) — do in main-loop Chrome | Works for agents |
+|---|---|
+| Find A Grave, Ancestry, WikiTree fetch, MyHeritage, GenealogyBank, **Chronicling America (403 now!)**, RootsWeb/USGWArchives (flaky), FamilySearch record search, **Antenati**, DuckDuckGo/Ecosia | NCGenWeb/county GenWeb pages, genealogytrails, cemeterycensus, **newspapers.digitalnc.org OCR** (`/lccn/<id>/<date>/ed-1/seq-N/ocr/`), **archive.org `_djvu.txt`**, NCGS estate-file county indexes, GRHS village pages, dvhh.org, odessa3.org, Archion coverage pages (public), wittenberg-bessarabien.de public lists, **ancestors.familysearch.org public profiles** (sometimes), Geni search snippets |
+
+## Ancestry (logged-in Chrome) — API + scraping recipes
+
+- **Tree list:** `fetch('/api/treesui-list/trees?limit=50')` in page context (credentials include).
+- **Person search in a tree:** `/api/treesui-list/trees/<treeId>/persons?name=<q>&limit=5&fields=NAMES,EVENTS` → gid `<pid>:1030:<treeId>`.
+- **Person facts page** `/family-tree/person/tree/<treeId>/person/<pid>/facts` → get_page_text gives the FULL timeline + source list + parents — the single highest-yield page per person.
+- **Pedigree scrape:** `/family-tree/tree/<treeId>/family/pedigree?cfpid=<pid>` renders 5 generations as `button.nodePedigree` nodes in DFS order; `aria-controls="HoverCard-<pid>"` carries the person id; "Potential" nodes = Ancestry ghost suggestions NOT in tree; "Add father/mother" = hard gap. Deeper generations: re-focus cfpid on an ancestor and map his ahn k → root ahn by binary prefix substitution (root's '1' → focus person's ahnentafel bits).
+- The Chrome-extension JS filter blocks source text containing search/query/county/cookie-ish patterns and long href harvesting — keep injected JS free of those words; fetch() of ancestry APIs from the ancestry tab works.
+
+## WV Vital Research Records (archive.wvculture.org / wvculture.org VRR) — FREE death/birth/marriage certificate IMAGES, browser only (agents got nothing). Deaths >50yrs public. Names parents, cause, informant. First stop for any WV death.
+
+## Antenati (antenati.cultura.gov.it) — browser only (403s all agent fetches)
+
+- Registry search: homepage "Cerca nei registri" form → GET `/search-registry/?localita=<comune>&anno=<yyyy>&tipologia=Nati|Matrimoni|Morti`. Name index (`/search-nominative/?cognome=`) is PARTIAL — crowdsourced, most comuni unindexed; a zero there means nothing.
+- **Same-name comune TRAP:** results for "Trevi" are **Trevi nel Lazio (Frosinone)** — Trevi (Perugia) is NOT digitized (2026-05). Always check the Serie/Località facet for the province. If a comune is absent: FamilySearch films (free login), or write the comune's ufficio anagrafe.
+- Immigrant comune discovery order: passenger manifest → **naturalization petition** (exact birthplace+date) → WWI/WWII draft cards → passport applications (all indexed on Ancestry).
+
+## Germans from Russia / Danube Swabians
+
+- **Ortsfamilienbücher** (village family books) are the master sources — check FamilySearch Digital Library (e.g. Parabutsch = item 914277) and HOG (Heimatortsgemeinschaft) publishers.
+- Bessarabia: GRHS village profiles (grhs.org), odessa3.org plain-text collections (paths non-obvious — browse libindex.html), wittenberg-bessarabien.de (public immigrant lists; full DB password-gated — email the project), denkmalprojekt.org village memorial lists, Archion for the Württemberg origin parishes (coverage pages public, images paid).
+- Context: Yugoslav partisans occupied Batschka Oct 1944 — ethnic-German deaths winter 1944–45 are often internment-related.
+
+## Published-genealogy shortcut
+
+Before grinding records for a colonial-era family, WebSearch "<surname> family history archive.org" — e.g. Ridlon's *History of the Families Millingas and Millanges* (1907) held the whole Brunswick Co Milliken line with land-grant dates. Download `_djvu.txt`, extract verbatim with page numbers. County historical-society **FamilyFiles PDFs** (e.g. brunswickcountyhistoricalsociety.org) are similar gold.
 
 ## Irish records
 

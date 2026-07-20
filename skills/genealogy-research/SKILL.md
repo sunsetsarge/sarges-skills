@@ -77,6 +77,9 @@ def get_rec(gedid):                      # ALWAYS anchor with '\n0 ' prefix —
 | Tucker→Conway/Maloney | Cornelius Conway (b.1824 Co. Clare) + Bridget Maloney (bapt. 15 Nov 1838 Kildysart, NLI 02475/04 — FOUND); Maloney townland = Gurtnagroon, Carrowreagh West | Galbally 1819 marriage (NLI 02499/03), Conway baptisms ~1829 Kildysart | p.52428907 |
 | Gore | Jonathan Gore (1740–1804; 1787 land entry #749, 1790 census Brunswick) | "Joshua Gore + Lena Edens" UNPROVEN; VA Goar family real but no Joshua b.1710 | p.91127833 |
 | Marks/Milligan/Gore-NC | Well documented via DigitalNC/Newspapers.com | — | p.48201729 (project log) |
+| **Pedigree sweeps (gen 1–5, both trees)** | Blaine: all 63 slots + wave findings (`Projects\Genealogy_Pedigree_Sweep\REPORT.md`). Jennifer (wife, tree CGMM 187294358): Italian line = Trevi (PG); 5 surname errors corrected; WV coal-country convergence (`..._Jennifer\REPORT.md`) | Gen-6 extension; gated sources (Archion, WV VRR, Familienbuch, Trevi records) | p.91652097 / p.91684865 |
+
+Multi-agent sweep methodology + agent-vs-browser access map + Ancestry/Antenati/WV-VRR recipes: see `references/toolbox.md`.
 
 ## Related skills / assets
 
