@@ -24,6 +24,15 @@ Validated procedures from real sessions (2026-05-09/10 incl. the two pedigree sw
 - **Pedigree scrape:** `/family-tree/tree/<treeId>/family/pedigree?cfpid=<pid>` renders 5 generations as `button.nodePedigree` nodes in DFS order; `aria-controls="HoverCard-<pid>"` carries the person id; "Potential" nodes = Ancestry ghost suggestions NOT in tree; "Add father/mother" = hard gap. Deeper generations: re-focus cfpid on an ancestor and map his ahn k → root ahn by binary prefix substitution (root's '1' → focus person's ahnentafel bits).
 - The Chrome-extension JS filter blocks source text containing search/query/county/cookie-ish patterns and long href harvesting — keep injected JS free of those words; fetch() of ancestry APIs from the ancestry tab works.
 
+## Fold3 (logged-in Chrome tab; Ancestry sub covers it) — military records
+
+- **Search URL that works** (after Cloudflare interstitial auto-clears in ~5s — never click a CAPTCHA yourself; if an interactive one appears, hand to Blaine):
+  `https://www.fold3.com/search?docQuery=(filters:!((type:military.conflict,values:!((label:%27<CONFLICT>%27,value:%27<CONFLICT>%27)))),keywords:%27<NAME>%27)` — conflict labels: `Civil+War+(Confederate)`, `Civil+War+(Union)`, `US+Revolutionary+War`, `World+War+I`, etc.
+- **UI quirks:** the query box (`combobox "Search names..."`, use form_input by ref) APPENDS a second keyword term instead of replacing — prefer clean URL navigation. Free-text search drowns in newspaper-OCR hits; always facet-filter by CONFLICT/WAR or search within a publication (`type:general.title.content.collection` filter, or the "Search within this publication" links).
+- Key publications: `US, Civil War Service Records (CMSR) - Confederate - <State>` (full service jackets, ages), `US, Revolutionary War Pensions, 1800-1900` (multi-page files, OCR-searchable), Confederate Amnesty Papers, WWI/WWII draft cards, Korean War draft registrations.
+- Result types: MULTI-IMAGE FILE = actual record jackets (gold); SERVICEPERSON/Memorial = user-contributed (leads only, same rules as Find A Grave).
+- First validated result (2026-05-10): **no NC Confederate CMSR exists for any "Hugh Long"** — the 18th-regiment Hugh M Long is MISSISSIPPI 18th Infantry, so the Columbus Co NC roster's initials-only "Long, H F, Co. H, 18th NC" is probably NOT our Hugh Long (ahn 60, Blaine).
+
 ## WV Vital Research Records (archive.wvculture.org / wvculture.org VRR) — FREE death/birth/marriage certificate IMAGES, browser only (agents got nothing). Deaths >50yrs public. Names parents, cause, informant. First stop for any WV death.
 
 ## Antenati (antenati.cultura.gov.it) — browser only (403s all agent fetches)
