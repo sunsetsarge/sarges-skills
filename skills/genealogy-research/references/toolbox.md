@@ -33,6 +33,11 @@ Validated procedures from real sessions (2026-05-09/10 incl. the two pedigree sw
 - Result types: MULTI-IMAGE FILE = actual record jackets (gold); SERVICEPERSON/Memorial = user-contributed (leads only, same rules as Find A Grave).
 - First validated result (2026-05-10): **no NC Confederate CMSR exists for any "Hugh Long"** — the 18th-regiment Hugh M Long is MISSISSIPPI 18th Infantry, so the Columbus Co NC roster's initials-only "Long, H F, Co. H, 18th NC" is probably NOT our Hugh Long (ahn 60, Blaine).
 
+## Archives.com (logged-in Chrome; Ancestry-owned budget sister site)
+
+- URL params don't auto-run — the form at `/search/census` (or /death, /birth, /marriage) needs filling: FirstName textbox, LastName, Location ("County, State" free text), then "Search now". Results include **inline "Members in Household" expanders** — the fastest household-composition view of any Ancestry property, no image load needed.
+- Value: same Ancestry census indexes through a lighter UI that doesn't fight automation. **Broke the Tharpe/Stanland Horry census wall in one query** after 2 agent waves + Fold3 + Ancestry-proper all stalled. Use it FIRST for census-trail questions; use Ancestry proper for record images/certs.
+
 ## WV Vital Research Records (archive.wvculture.org / wvculture.org VRR) — FREE death/birth/marriage certificate IMAGES, browser only (agents got nothing). Deaths >50yrs public. Names parents, cause, informant. First stop for any WV death.
 
 ## Antenati (antenati.cultura.gov.it) — browser only (403s all agent fetches)
