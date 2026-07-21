@@ -23,6 +23,11 @@ Rules of evidence:
 3. **Governor/nobility/Mayflower parents** on a colonial-era ancestor → assume prestige myth until a primary record says otherwise.
 4. **GEDCOM embedded NOTEs often contain the receipts** — old GenWeb posts admitting "speculation." Always reassemble and read them (CONC/CONT lines).
 5. Absence in burned-county records (e.g. Brunswick Co. NC, courthouse burned 1865) is weak evidence — say so.
+6. **Extract one generation DEEPER than the research target before launching agents.** The tree often already answers the "mystery" at gen N via its gen N+1 records — "Katharina Stumen" spent two agent waves unsolved while her parents (Jakob STURM + Hehr) sat in the tree one level up, decoding the garbled surname for free.
+7. **Park dismissed records; don't discard.** A record rejected as "wrong person" for the target may be the right record for a PARENT: the 1813 Tharp–Reynolds marriage was dismissed at gen 5 (predates the target's birth), then confirmed at gen 6 as his parents' marriage.
+8. **Anachronism audit**: check county-creation dates against claimed birthplaces ("b.1802 Obion Co TN" — county created 1823 = fabricated merge). Surname-morph grafts (Barker→Parker, Kentucky family on an NC line) are the same disease — test whether the grafted family has its own self-contained life elsewhere.
+9. **Diagnose the root of a bad Ancestry hint** instead of just refuting it — e.g. ghost-wife "Edith Lee" traced to an 1850 census where Edith, 55, cohabits with Jonathan Toole, 37: his mother, misread as wife. Naming the root kills the hint permanently.
+10. Ancestry ghost/Potential nodes are useful as *independent corroboration*: when a ghost's surname matches your correction from other evidence (Toole, Turlington, Barber cases), confidence rises even though ghosts alone prove nothing. Trees also get edited mid-project — re-scrape before planning each wave.
 
 ## Environment (Windows) — hard-won gotchas
 
@@ -33,6 +38,7 @@ Rules of evidence:
 | WebFetch 403 on findagrave.com, wikitree.com, from-ireland.net, irishgenealogy.ie | Use the Claude-in-Chrome extension (`navigate` + `get_page_text` / `javascript_tool`) |
 | Chrome-extension JS blocked ("Cookie/query string data") | Avoid words like `search`, `query`, `county`, cookie-ish patterns in the JS source; use `indexOf` loops and innerText slices |
 | Confluence `spaceId` | Must be numeric `98313` (CullyHouse/SD), not the key; `contentFormat: "markdown"` |
+| Python print crashes (cp1252) on GEDCOM names with emoji/diacritics | Prefix runs with `set PYTHONIOENCODING=utf-8&&` (cmd) — user-entered ✅ and Serbian/German chars exist in the tree |
 
 ## Key files & data
 

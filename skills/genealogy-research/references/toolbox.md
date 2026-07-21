@@ -14,7 +14,7 @@ Validated procedures from real sessions (2026-05-09/10 incl. the two pedigree sw
 
 | Blocked for agents (403/login) — do in main-loop Chrome | Works for agents |
 |---|---|
-| Find A Grave, Ancestry, WikiTree fetch, MyHeritage, GenealogyBank, **Chronicling America (403 now!)**, RootsWeb/USGWArchives (flaky), FamilySearch record search, **Antenati**, DuckDuckGo/Ecosia | NCGenWeb/county GenWeb pages, genealogytrails, cemeterycensus, **newspapers.digitalnc.org OCR** (`/lccn/<id>/<date>/ed-1/seq-N/ocr/`), **archive.org `_djvu.txt`**, NCGS estate-file county indexes, GRHS village pages, dvhh.org, odessa3.org, Archion coverage pages (public), wittenberg-bessarabien.de public lists, **ancestors.familysearch.org public profiles** (sometimes), Geni search snippets |
+| Find A Grave, Ancestry, WikiTree fetch, MyHeritage, GenealogyBank, **Chronicling America (403 now!)**, RootsWeb/USGWArchives (flaky), FamilySearch record search, **Antenati**, **registers.nli.ie (403s agents too — main-loop only)**, genealogy.com forums (Cloudflare — Google snippets recover content), DuckDuckGo/Ecosia | NCGenWeb/county GenWeb pages, genealogytrails, cemeterycensus, **us-census.org image indexes** (1820s+ county head-of-household lists), **newspapers.digitalnc.org OCR** (`/lccn/<id>/<date>/ed-1/seq-N/ocr/`), **archive.org `_djvu.txt`**, NCGS estate-file county indexes, GRHS village pages, dvhh.org, odessa3.org, Archion coverage pages (public), wittenberg-bessarabien.de public lists, **ancestors.familysearch.org public profiles** (sometimes), Geni search snippets |
 
 ## Ancestry (logged-in Chrome) — API + scraping recipes
 
