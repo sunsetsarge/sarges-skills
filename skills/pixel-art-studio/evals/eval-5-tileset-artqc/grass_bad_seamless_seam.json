@@ -1,0 +1,12 @@
+{
+  "seam_diff_before": 93.704,
+  "threshold": 12.0,
+  "strategy_used": "edge_match",
+  "seam_diff_after": 0.0,
+  "tried": {
+    "edge_match": 0.0,
+    "torus": 61.47,
+    "none": 93.704
+  },
+  "pass": true
+}

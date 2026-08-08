@@ -1,0 +1,32 @@
+{
+  "metrics": {
+    "alpha_crispness": {
+      "value": 1.0,
+      "pass": true,
+      "gate": "hard"
+    },
+    "outline_coverage": {
+      "value": 0.1076388888888889,
+      "pass": false,
+      "gate": "soft"
+    },
+    "baseline_alignment": {
+      "value": true,
+      "pass": true,
+      "gate": "hard"
+    },
+    "opaque_fraction": {
+      "value": 0.7034319526627218,
+      "pass": null,
+      "gate": "info"
+    },
+    "palette_size": {
+      "value": 32,
+      "pass": null,
+      "gate": "info"
+    }
+  },
+  "hard_fail": false,
+  "soft_fail": true,
+  "pass": true
+}

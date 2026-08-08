@@ -1,15 +1,20 @@
 ---
 name: pixel-art-studio
-description: Generate game-usable, true-grid pixel art (character sprites, tiles, icons, 8-direction sprite sheets) using the local ComfyUI install, with a Python post-process pipeline that turns any AI generation into authentic low-color pixel art -- verified programmatically, not eyeballed. Use this whenever the user asks for pixel art, a sprite, a tileset, an 8-bit or 16-bit game asset, a spritesheet, or retro/SNES-style game art, even if they don't name a tool or resolution. Also use it to clean up an existing "pixel-art-ish" image (e.g. from ChatGPT/DALL-E) into a true grid, and to slice a generated 3x3 direction sheet into 8 game-ready frames. NOT for photorealistic or non-pixel-style image generation (comfyui-studio). Direction-accurate 8-way ROTATION SHEETS are not reliably achievable via one-shot generation (models fake the composition but repeat the same pose in every cell) -- say so honestly. Single-POSE EDITS off one reference image (walk/idle frames via Qwen-Edit-2511) DO work, verified end to end -- see references/sprite-sheets.md for both findings and the PixelLab.ai buy-gate recommendation for full animation matrices.
+description: Generate game-usable, true-grid pixel art (character sprites, tiles, icons, sprite sheets, animations) two ways -- GENERATE via the local ComfyUI install then grid-snap/quantize in Python (Lanes A/B/C), or DRAW every pixel deterministically in Pillow via scripts/pixelstudio.py with no model at all (Lane D). Use this whenever the user asks for pixel art, a sprite, a tileset, an icon, a spritesheet, an 8-bit or 16-bit game asset, a pixel animation or GIF, or retro/SNES-style game art, even if they don't name a tool or resolution. Also use it to clean up an existing "pixel-art-ish" image (e.g. from ChatGPT/DALL-E) into a true grid, to slice a generated 3x3 direction sheet into 8 game-ready frames, to build an LPC universal spritesheet, to palette-swap variants of an existing sprite, or to STUDY a reference image and learn its style. NOT for photorealistic or non-pixel-style image generation (comfyui-studio). Direction-accurate 8-way ROTATION SHEETS are not reliably achievable via one-shot generation (models fake the composition but repeat the same pose in every cell) -- say so honestly; Lane D can hand-draw true back/side views instead, at the cost of real token spend per sprite.
 ---
 
 # Pixel Art Studio
 
-Produces true-grid pixel art PNGs: generate with the local ComfyUI install (or
-ChatGPT desktop, named explicitly), then run every result through a Python
-post-process pipeline that grid-snaps, quantizes, and verifies the output --
-so "pixel art" means an actual low-resolution color-quantized grid, not an
-AI image that merely looks blocky at a glance.
+Produces true-grid pixel art PNGs two different ways:
+
+- **Generate lanes (A/B/C)** — generate with the local ComfyUI install (or
+  ChatGPT desktop, named explicitly), then run every result through a Python
+  post-process pipeline that grid-snaps, quantizes, and verifies the output --
+  so "pixel art" means an actual low-resolution color-quantized grid, not an
+  AI image that merely looks blocky at a glance.
+- **Draw lane (D)** — no model at all. You are the artist: author a `build.py`
+  that places every pixel via `scripts/pixelstudio.py` (Pillow only), render,
+  **look at it**, critique, fix, repeat.
 
 **Division of labor:** ComfyUI only generates. `scripts/pixelize.py` (this
 skill) owns 100% of the pixelization — no ComfyUI custom node does grid-snap
@@ -18,13 +23,41 @@ installs on this machine, and doing pixelization in Python makes the same
 pipeline work identically on ComfyUI output, ChatGPT output, or any existing
 image on disk.
 
-## The three lanes
+## The four lanes
 
 | Lane | Model | When to use | License |
 |---|---|---|---|
 | **B (default for single sprites)** | `dreamshaperPixelart_v10.safetensors` (SD1.5, 512px) | Best authentic pixel-art texture, least post-processing needed | OpenRAIL — check terms before commercial use |
 | **A** | Qwen-Image (via Lightning LoRA, ~1328px) | Complex scenes, stronger prompt adherence, commercial-safe | Apache-2.0 |
 | **C** | ChatGPT desktop / DALL-E | **Only when the user explicitly names ChatGPT** (per `chatgpt-desktop`'s own trigger rule) — strongest stylistic quality, always off-grid | Follows OpenAI's terms |
+| **D** | none — deterministic Pillow drawing | Icons, tiles, UI chrome, small sprites, palette variants, animation, true back/side views, and anything that must stay **editable** afterwards | MIT (see `THIRD-PARTY.md`) |
+
+### Choosing a lane — read this before generating anything
+
+**Default to A/B.** They cost GPU seconds; Lane D costs model tokens, because
+every sprite is a hand-written 100–270 line build script plus 2–3
+render→look→fix passes. Do not spend Lane D tokens on work a generation
+handles.
+
+Reach for **Lane D** when one of these is true:
+
+- The asset is small and geometric — an icon, a tile, a UI frame, a HUD
+  element, a health pip. Generation overshoots and then fights you.
+- The user will want **edits later**. Lane D regenerates from `build.py`, so
+  changing the sword leaves everything else byte-identical. A/B re-roll and
+  pray.
+- You need **palette-swap variants** (enemy recolors) — `replace()` per ramp
+  step, seconds each.
+- You need a genuine **back or side view**. Diffusion won't give you one (see
+  the 8-direction section); hand-drawn code will.
+- You need **deterministic animation** — the same character guaranteed across
+  every frame, without Qwen-Edit's ~22-min cold load per pass.
+
+Stay in **A/B** when the subject is ornate or high-detail (an armored knight
+with 30 plate segments). Lane D has a real detail ceiling — hand-placed
+primitives cannot match a diffusion render there, and `references/cleanup.md`
+says so plainly. The two lanes compose: generate in A/B, then clean into an
+editable Lane D `build.py` (see "Hybrid" below).
 
 Read `references/pixel-prompting.md` before writing the prompt — "simple
 background" alone does not reliably produce a flood-fill-friendly flat
@@ -138,12 +171,156 @@ generations happen** (Phase 0 hit one on ChatGPT output; `pixelize.py`'s
 built-in convergence loop handles the common case automatically, but always
 confirm with `qc_check.py` rather than assuming it worked).
 
+`qc_check.py` answers "is this a valid pixel grid". It does **not** answer
+"is this good art" — it passes sprites that float, have no outline, or whose
+walk cycle swaps character halfway through. For that, also run:
+
+```bash
+C:\AI-Shared\python.exe scripts\art_qc.py sprite sprite_grid.png
+C:\AI-Shared\python.exe scripts\art_qc.py frames f0.png f1.png f2.png f3.png
+```
+
+Base interpreter, Pillow only. Checks outline coverage and ground contact on
+a single sprite, and silhouette IoU + bbox drift across frames — the
+identity-drift detector for multi-frame work. **Feed the `frames` mode
+character-isolated art** (transparent except the character) or it scores
+background movement instead; see `references/art-qc.md`.
+
 ### 5. Present the result
 
 Show the user the `*_final.png` (viewable at normal size) and mention the
 native grid resolution and color count from the QC report. If QC failed,
 say so plainly and either retry with a different `--method`/`--colors`, or
 run RMBG first if it hasn't been tried.
+
+## Lane D — deterministic drawing (no model)
+
+You are the artist; `scripts/pixelstudio.py` is your hand. The
+see→critique→fix loop **is** the quality engine — never skip it, and never
+show the user a first render.
+
+Requires only Pillow: `C:\AI-Shared\python.exe -c "import PIL"` (verified
+present, 10.4.0). No venv, no torch, no ComfyUI.
+
+### The loop
+
+1. **Brief** — canvas size, palette with a **hard color budget**, style,
+   outline rule, light direction. Read `references/patterns.md` and
+   `references/palettes.md` first, and check
+   `references/learned/INDEX.md` for a studied style that matches.
+2. **Build script** — create `pixel-art/<slug>/build.py` in the working
+   directory. It is the artwork's source of truth and regenerates everything
+   on each run. Parametrize shapes (position, squash, frame offset) so
+   animation frames are function calls, not copy-paste.
+
+   ```python
+   import sys
+   sys.path.insert(0, r"C:\Claude\sarges-skills\skills\pixel-art-studio\scripts")
+   from pixelstudio import Sprite, PALETTES, ramp, mix
+
+   BODY = ramp("#38b764", 5)                 # hue-shifted 5-step ramp
+   s = Sprite(32, 32, palette=BODY + ["#1a1c2c", "#f4f4f4"])
+
+   def draw_slime(squash=0):                 # parametric -> reuse per frame
+       s.ellipse(6, 12 + squash, 25, 27, BODY[0])                 # darkest first
+       s.ellipse(6, 11 + squash, 24, 26, BODY[2], only="opaque")  # restack toward light
+       s.outline(BODY[0], where="inside")                         # selout
+   draw_slime()
+
+   s.preview("preview.png", scale=10)        # LOOK at this file
+   s.stats()                                 # and READ these numbers
+   ```
+3. **Run** — `C:\AI-Shared\python.exe build.py` from `pixel-art/<slug>/`.
+4. **LOOK** — Read `preview.png` with your own eyes (plus
+   `s.save_silhouette()` / `s.zoom()` when unsure). Critique point by point
+   against `references/validations.md`, honestly.
+5. **Fix** — edit `build.py`, rerun. **Minimum 2–3 passes** before showing
+   the user. Check `references/sharp_edges.md` before finalizing.
+6. **Deliver** — export the 1x master **and** a 4–8x display copy; GIF or
+   spritesheet if animated. Report the 1x path.
+
+Work at true pixel size always. Scale is an export-time concern and **integer
+only**.
+
+### API — scripts/pixelstudio.py
+
+Colors: `"#hex"` | `(r,g,b[,a])` | palette index (int) | `None` = erase.
+Most ops take `only=` to clip — a color, `"opaque"`, or `"empty"`. That
+masking system is what the shifted-shape shading recipe in
+`references/techniques.md` is built on.
+
+| Area | Calls |
+|---|---|
+| Canvas | `Sprite(w, h, palette=None, snap=True)` · `s.layer(name)` · `s.frame(i)` · `s.use(frame=, layer=)` |
+| Draw | `px(x,y,c)` `line(x0,y0,x1,y1,c)` `rect(x0,y0,x1,y1,c,fill=True)` `circle(cx,cy,r,c,fill=False)` (pixel-perfect) `ellipse(x0,y0,x1,y1,c,fill=True)` `polygon(points,c)` `contour(points,c)` `fill(x,y,c)` `clear` `get(x,y)` `paste_png` — **color is positional, `fill=` is a bool, not the color** |
+| Pixel-art ops | `outline(c, where="outside"/"inside")` · `mirror_x` `mirror_y` · `shift(dx,dy,wrap=)` · `replace(old,new)` · `dither(box,c1,c2,mix,pattern)` · `gradient_dither(box,colors)` · `noise(box,c,density,seed)` |
+| Color | `ramp(base, steps, hue_shift)` · `mix(c1,c2,t)` · `PALETTES` · `s.set_palette(p, remap=)` · `s.to_palette(p, dither=)` · `s.quantize(n)` |
+| Cleanup | `s.harden_alpha(threshold, steps)` · `s.despeckle(min_cluster)` · `s.dedupe_colors(tol)` · `s.dehalo()` · `s.clean(...)` · `s.before_after(path)` |
+| Animation | `s.add_frame(copy=True)` · `s.set_duration(ms, frames)` · `s.tag(name, from, to, direction)` · `s.copy_cel(layer, from_frame, to_frames, link=)` · `s.del_frame` |
+| Inspect | `s.preview(path, scale, grid=, labels=)` · `s.zoom(path, x0,y0,x1,y1)` · `s.save_silhouette(path)` · `s.stats()` · `s.save_swatch(path)` · `s.used_colors()` |
+| Export | `s.save_png(path, frame, scale, bg)` · `s.save_gif(path, scale, tag, bg)` · `s.save_spritesheet(path, layout, scale, padding)` (+engine JSON) · `s.save_project` / `Sprite.load_project` / `Sprite.from_png(path, scale="auto", strip_bg=)` |
+
+Built-in palettes: `onebit`, `gameboy`, `pico8`, `sweetie16`, `c64`,
+`endesga32`.
+
+### LPC universal spritesheet (humanoids)
+
+For a character with 2 arms and 2 legs, `scripts/lpc.py` assembles frames onto
+the LPC grid so the result drops into any LPC-aware engine/template. Read
+`references/lpc.md`. Only the **grid convention** comes from LPC — no LPC
+artwork ships with this skill (see `THIRD-PARTY.md`).
+
+```python
+from lpc import LPCSheet, ACTIONS
+sheet = LPCSheet()
+for action, direction, frame in sheet.slots():   # every cell to fill
+    sheet.place(action, direction, frame, draw(action, direction, frame))
+sheet.save("hero_lpc.png")                       # + hero_lpc.json meta
+sheet.gif("walk_left.gif", "walk", "left", scale=2)
+```
+
+**Scope honestly.** The full sheet is 21 rows × 13 cells across six actions
+(spellcast 7, thrust 8, walk 9, slash 6, shoot 13, hurt 6). Upstream's own
+flagship example fills only walk and slash — 54 of 210 cells — from a 232-line
+build script. Filling the whole matrix is a large, expensive job. Agree the
+action list with the user up front, and never imply an empty row is done.
+
+### Hybrid — clean a generation into an editable Lane D script
+
+The two lanes compose. Generate the base in A/B/C, then clean it into a
+regenerable `build.py` and keep editing deterministically:
+
+```bash
+C:\AI-Shared\python.exe scripts\pixelpipe.py gen.png --strip-checker --max-colors 24 --display 6
+C:\AI-Shared\python.exe scripts\pixelpipe.py gen.png --palette my_game    # cross-asset lock
+```
+
+**`pixelize.py` remains the default for hi-res ComfyUI output** — it has the
+PixelOE outline-aware downscale and the QC convergence loop that
+`pixelpipe.py` lacks. Use `pixelpipe.py` specifically when you want the
+editable `build.py` it emits, or for already-pixel-ish input. Full playbook in
+`references/cleanup.md`.
+
+### Learning a style from a reference image
+
+```bash
+C:\AI-Shared\python.exe scripts\study.py <file> --save-palette <name>
+```
+
+Emits `<file>_study/` with `zoom.png`, `swatch.png`, `silhouette.png`,
+`report.json`. Read the zoom and swatch with your own eyes — the report gives
+numbers, your eyes extract the *techniques*. Write a card into
+`references/learned/NNN-<slug>.md` from `TEMPLATE.md` and add a line to
+`references/learned/INDEX.md` **in the same change**. Durable knowledge goes
+under the skill directory, never beside the input file.
+
+### Lane D conventions
+
+- Artworks live in `./pixel-art/<slug>/` — `build.py` plus all outputs.
+- **Never hand-edit an exported PNG.** It's a compile target; edit `build.py`.
+- Randomness only via `noise(seed=)`. Renders must be deterministic.
+- Deliver `save_png`/`save_gif`/`save_spritesheet` output only — previews,
+  grids, and contact sheets are working documents, not deliverables.
 
 ## 8-direction sprite sheets
 
@@ -184,6 +361,16 @@ to try is `scripts/comfy_edit.py` (Qwen-Edit-2511 pose edits off a single
 reference) — see `references/sprite-sheets.md` for what's been tried and the
 PixelLab.ai buy-gate recommendation for production work.
 
+**Lane D does not solve this either — it changes the question.** LPC is a
+**4-direction** convention (up/left/down/right), not 8. It sidesteps rotation
+rather than solving it. Drawing by hand does buy you a genuine back view,
+which no generation lane has produced, but be skeptical of the side views
+too: in upstream's own flagship character, "left" and "right" are near-front
+3/4 poses with the props mirrored, not true profiles (verified by cropping the
+sheet, not from the README). If the user needs a real 8-way rotation matrix,
+the honest answers remain PixelLab.ai or hand-drawing all eight — say so
+instead of shipping mirrored 3/4s labelled as directions.
+
 ## Walk/idle animation
 
 Unlike direction sheets, **single-pose edits via `scripts/comfy_edit.py`
@@ -197,6 +384,42 @@ budget the first edit pass's ~22 min cold load, then expect faster
 subsequent passes. For a full 8-direction × multi-frame animation matrix,
 PixelLab.ai is still the more reliable bet; see `references/sprite-sheets.md`
 for the full writeup and when to reach for which.
+
+Measure drift rather than eyeballing it — `art_qc.py frames` reports
+silhouette IoU and bbox drift, which is what "identity preserved" actually
+means. Generate the frames on a transparent background, though: the existing
+`eval-3-walk` frames kept their backdrop and VFX, so the metric scores the
+scenery moving rather than the character. See `references/art-qc.md`.
+
+## Tilesets
+
+A tile is not a sprite: it has to survive being laid next to a copy of
+itself. **Generate at 3x the tile size and keep the center crop** — a framed
+image cannot be made to tile without wrecking its edges, and every fix below
+is damage control for skipping this.
+
+```bash
+# score, then fix (writes *_seamless.png + *_seam.json)
+C:\AI-Shared\python.exe scripts\tileset.py seam grass.png
+C:\AI-Shared\python.exe scripts\tileset.py fix grass_96.png --crop-center 32
+
+# score every tile in a packed sheet — names the worst offender
+C:\AI-Shared\python.exe scripts\tileset.py sheet overworld.png --tile-size 32 --columns 8
+
+# emit Tiled TSX + a demo TMJ map
+C:\AI-Shared\python.exe scripts\tileset.py export overworld.png --tile-size 32 \
+    --columns 8 --names grass,dirt,water,stone
+```
+
+`--strategy auto` escalates torus → edge_match and keeps whichever scores
+best, never returning something worse than the input. **Always look at
+`edge_match` output**: it passes the gate by construction because it forces
+the edges equal, so the score says nothing about whether it still looks
+right. `references/tilesets.md` has a montage snippet for checking.
+
+Tiled TSX is a *tileset* definition — distinct from the Aseprite/Unity/Godot
+*spritesheet* formats in `references/export.md`, which are for animation
+frames. Wilmington 16-Bit and skill-snes-rpg both consume TSX.
 
 ## Worked example: an asset request for a game project
 
@@ -228,6 +451,26 @@ any consumer project that specs sprites via that skill's
    setup per the spec's export conventions (feet-center origin, right-facing
    only, single sheet per entity).
 
+## Knowledge routing
+
+| Task | Read |
+|---|---|
+| Writing the generation prompt (Lanes A/B/C) | `references/pixel-prompting.md` |
+| What the QC checks mean and how to fix a failure | `references/qc.md` |
+| Art-quality + frame-drift metrics (the other half of QC) | `references/art-qc.md` |
+| Seamless tiles, seam scoring, Tiled TSX/TMJ export | `references/tilesets.md` |
+| Sheet generation findings, Qwen-Edit results, PixelLab buy-gate | `references/sprite-sheets.md` |
+| **Lane D:** sizes, chibi/heroic/tall proportions, silhouette-first order, tiles | `references/patterns.md` |
+| **Lane D:** ramps, shading, dithering, AA, outlines, textures | `references/techniques.md` |
+| **Lane D:** frame counts, timing, puppeting, stable pivots | `references/animation.md` |
+| **Lane D:** LPC sheet assembly for humanoids | `references/lpc.md` + `scripts/lpc.py` |
+| **Lane D:** palette choice, budgets, presets, learned palettes | `references/palettes.md` |
+| **Lane D:** engine export formats (Unity/Godot/Phaser) | `references/export.md` |
+| Hybrid — cleaning generated art into an editable build.py | `references/cleanup.md` |
+| **Known failure modes — read before finalizing any Lane D art** | `references/sharp_edges.md` |
+| Per-iteration critique checklist | `references/validations.md` |
+| Studied styles from reference art | `references/learned/INDEX.md` |
+
 ## Handoffs
 
 - ComfyUI submission plumbing, model routing, VRAM/recovery management,
@@ -236,3 +479,5 @@ any consumer project that specs sprites via that skill's
 - ChatGPT desktop automation (Lane C) → `chatgpt-desktop`
 - Sprite sheet slicing + facing verification (once Phase 2 is built) →
   `browser-game-builder`'s `slice_sprites.py` / `verify_facing.py`
+- Lane D engine provenance and license → `THIRD-PARTY.md`
+  (MIT, github.com/Gamezxz/pixel-art-studio)
