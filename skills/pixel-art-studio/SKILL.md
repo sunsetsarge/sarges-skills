@@ -1,6 +1,6 @@
 ---
 name: pixel-art-studio
-description: Generate game-usable, true-grid pixel art (character sprites, tiles, icons, sprite sheets, animations) two ways -- GENERATE via the local ComfyUI install then grid-snap/quantize in Python (Lanes A/B/C), or DRAW every pixel deterministically in Pillow via scripts/pixelstudio.py with no model at all (Lane D). Use this whenever the user asks for pixel art, a sprite, a tileset, an icon, a spritesheet, an 8-bit or 16-bit game asset, a pixel animation or GIF, or retro/SNES-style game art, even if they don't name a tool or resolution. Also use it to clean up an existing "pixel-art-ish" image (e.g. from ChatGPT/DALL-E) into a true grid, to slice a generated 3x3 direction sheet into 8 game-ready frames, to build an LPC universal spritesheet, to palette-swap variants of an existing sprite, or to STUDY a reference image and learn its style. NOT for photorealistic or non-pixel-style image generation (comfyui-studio). Direction-accurate 8-way ROTATION SHEETS are not reliably achievable via one-shot generation (models fake the composition but repeat the same pose in every cell) -- say so honestly; Lane D can hand-draw true back/side views instead, at the cost of real token spend per sprite.
+description: Generate game-usable, true-grid pixel art (character sprites, tiles, icons, sprite sheets, animations) three ways -- GENERATE via the local ComfyUI install then grid-snap/quantize in Python (Lanes A/B/C), DRAW every pixel deterministically in Pillow via scripts/pixelstudio.py with no model at all (Lane D), or call the PixelLab.ai MCP tools directly for genuine 8-direction rotation + multi-frame animation (validated 2026-08-14 -- see below). Use this whenever the user asks for pixel art, a sprite, a tileset, an icon, a spritesheet, an 8-bit or 16-bit game asset, a pixel animation or GIF, or retro/SNES-style game art, even if they don't name a tool or resolution. Also use it to clean up an existing "pixel-art-ish" image (e.g. from ChatGPT/DALL-E) into a true grid, to slice a generated 3x3 direction sheet into 8 game-ready frames, to build an LPC universal spritesheet, to palette-swap variants of an existing sprite, or to STUDY a reference image and learn its style. NOT for photorealistic or non-pixel-style image generation (comfyui-studio). Direction-accurate 8-way ROTATION SHEETS are NOT reliably achievable via one-shot ComfyUI/ChatGPT generation (models fake the composition but repeat the same pose in every cell) -- say so honestly, and reach for the `mcp__pixellab__*` tools instead if available (confirmed working on the exact case that fails locally); Lane D can also hand-draw true back/side views at the cost of real token spend per sprite.
 ---
 
 # Pixel Art Studio
@@ -324,7 +324,19 @@ under the skill directory, never beside the input file.
 
 ## 8-direction sprite sheets
 
-**Generate with Lane A (Qwen), not Lane B.** dreamshaperPixelart_v10 doesn't
+**Try PixelLab first if `mcp__pixellab__*` tools are available.**
+`create_character(mode="standard", n_directions=8)` produces a genuinely
+correct 8-direction rotation (proper back view, correctly mirrored side
+profiles) for 1 generation — validated 2026-08-14 on the exact "knight, 8
+directions" case that fails below on every local lane. Check
+`mcp__pixellab__get_balance` first (shared trial account across projects —
+don't assume unlimited credits) and see `references/sprite-sheets.md` for
+the full comparison. The local ComfyUI path below is the fallback when
+PixelLab isn't connected/available, not the first choice for this
+specific task.
+
+**If using local generation instead: Lane A (Qwen), not Lane B.**
+dreamshaperPixelart_v10 doesn't
 understand "reference sheet" composition — three independent attempts
 produced a map, a sheet of different character designs, and a crowd scene.
 Qwen reliably produces a clean 3x3 grid with a consistent character across
@@ -356,34 +368,45 @@ back/side/rotated views, confirmed across two separate prompt strategies
 including an extremely explicit panel-by-panel description. This isn't a
 prompting problem to keep iterating on; standard text-to-image models don't
 have real pose/3D understanding. Tell the user this plainly rather than
-shipping a sheet that only *looks* like it has 8 directions. The next lever
-to try is `scripts/comfy_edit.py` (Qwen-Edit-2511 pose edits off a single
-reference) — see `references/sprite-sheets.md` for what's been tried and the
-PixelLab.ai buy-gate recommendation for production work.
+shipping a sheet that only *looks* like it has 8 directions. **PixelLab
+(above) is now the validated fix**, not just a recommendation — it's
+confirmed to solve exactly this failure mode. If PixelLab isn't available,
+the next local lever is `scripts/comfy_edit.py` (Qwen-Edit-2511 pose edits
+off a single reference) — see `references/sprite-sheets.md` for the full
+comparison.
 
 **Lane D does not solve this either — it changes the question.** LPC is a
 **4-direction** convention (up/left/down/right), not 8. It sidesteps rotation
 rather than solving it. Drawing by hand does buy you a genuine back view,
-which no generation lane has produced, but be skeptical of the side views
-too: in upstream's own flagship character, "left" and "right" are near-front
-3/4 poses with the props mirrored, not true profiles (verified by cropping the
-sheet, not from the README). If the user needs a real 8-way rotation matrix,
-the honest answers remain PixelLab.ai or hand-drawing all eight — say so
-instead of shipping mirrored 3/4s labelled as directions.
+which no local generation lane has produced, but be skeptical of the side
+views too: in upstream's own flagship character, "left" and "right" are
+near-front 3/4 poses with the props mirrored, not true profiles (verified by
+cropping the sheet, not from the README). If the user needs a real 8-way
+rotation matrix and PixelLab isn't an option, hand-drawing all eight is the
+honest fallback — say so instead of shipping mirrored 3/4s labelled as
+directions.
 
 ## Walk/idle animation
 
-Unlike direction sheets, **single-pose edits via `scripts/comfy_edit.py`
-(Qwen-Edit-2511) genuinely work**: two independent edit passes against the
-same reference image ("left leg forward" / "right leg forward") produced a
-real alternating stride, both frames QC-passing, identity preserved. This
-conditions on an actual reference image rather than blind multi-panel text
-generation, which is why it succeeds where the direction-sheet approach
-doesn't. Only tested at 2 frames so far and not across all 8 facings —
-budget the first edit pass's ~22 min cold load, then expect faster
-subsequent passes. For a full 8-direction × multi-frame animation matrix,
-PixelLab.ai is still the more reliable bet; see `references/sprite-sheets.md`
-for the full writeup and when to reach for which.
+**PixelLab's `animate_character` is validated for this** (2026-08-14):
+`template_animation_id="walk"` across all 8 directions in one call produced
+a genuinely smooth 6-frame walk cycle per direction — clear leg/arm
+articulation, consistent identity, every frame QC-passing, no pixelize.py
+step needed. It covers all 8 directions at once; see the dozens of other
+`available_animations` template names (run, jump, attack, death, etc.) on
+`get_character`'s output for non-walk needs.
+
+If PixelLab isn't available, **single-pose edits via `scripts/comfy_edit.py`
+(Qwen-Edit-2511) are the local fallback and genuinely work** for a one-off
+pose: two independent edit passes against the same reference image ("left
+leg forward" / "right leg forward") produced a real alternating stride, both
+frames QC-passing, identity preserved. This conditions on an actual
+reference image rather than blind multi-panel text generation, which is why
+it succeeds where the direction-sheet approach doesn't — but it's one
+direction and one pose pair per invocation, not the full matrix PixelLab
+covers in one call. Budget the first edit pass's ~22 min cold load, then
+expect faster subsequent passes. See `references/sprite-sheets.md` for the
+full comparison and when to reach for which.
 
 Measure drift rather than eyeballing it — `art_qc.py frames` reports
 silhouette IoU and bbox drift, which is what "identity preserved" actually

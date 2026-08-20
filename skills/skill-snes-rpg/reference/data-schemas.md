@@ -17,6 +17,13 @@ Conventions used by all schemas:
 - `epoch` fields take `"verdant" | "sundered" | "both"` (default `"both"`).
 - Every cross-file reference field name ends in `Id` or `Ids`.
 
+**Data-model decision:** elements are their own 7th data file, `elements.json`
+(schema in §7), not a fixed enum. Keeping "everything content-side is data"
+means the element roster is itself editable/extensible per game like every
+other collection, and the cross-reference pass can validate `$ref:
+"elements.id"` fields the same uniform way it validates every other ref —
+no special-cased enum path in the validator.
+
 ---
 
 ## 1. characters.json
@@ -242,7 +249,19 @@ Used by innate lists, Glyphstones, and enemy `spell:` acts alike — one pool.
   { "id": "mendrain", "name": "Mendrain", "mpCost": 5, "kind": "heal",
     "spellPower": 30, "usableInField": true,
     "targeting": { "side": "ally", "scope": "one", "splittable": true },
-    "animId": "green_motes", "sfxId": "sfx_heal1" }
+    "animId": "green_motes", "sfxId": "sfx_heal1" },
+  { "id": "ember_storm", "name": "Ember Storm", "mpCost": 14, "kind": "damage",
+    "element": "ember", "spellPower": 30,
+    "targeting": { "side": "enemy", "scope": "all" },
+    "animId": "flame_burst", "sfxId": "sfx_fire2" },
+  { "id": "enrage_self", "name": "Enrage", "mpCost": 0, "kind": "buff",
+    "buff": { "stat": "atk", "mult": 1.6, "ticks": 3 },
+    "targeting": { "side": "ally", "scope": "self" },
+    "animId": "red_flare", "sfxId": "sfx_growl" },
+  { "id": "tide_surge", "name": "Tide Surge", "mpCost": 0, "kind": "damage",
+    "element": "tide", "spellPower": 45,
+    "targeting": { "side": "enemy", "scope": "all" },
+    "animId": "wave_crash", "sfxId": "sfx_water1" }
 ]
 ```
 
@@ -317,6 +336,13 @@ object (SKILL.md stated default #4).
   { "id": "tonic", "name": "Tonic", "kind": "consumable", "price": 50,
     "description": "Restores 50 HP.",
     "use": { "effect": "restoreHp", "amount": 50, "inBattle": true, "inField": true } },
+  { "id": "ashen_salve", "name": "Ashen Salve", "kind": "consumable", "price": 90,
+    "description": "Cools scorched skin, curing burn-linked status.",
+    "use": { "effect": "cureStatus", "status": "venom", "inBattle": true, "inField": true } },
+  { "id": "ember_charm", "name": "Ember Charm", "kind": "accessory", "price": 0,
+    "description": "A husk-forged trinket that dulls flame to a warm glow.",
+    "equip": { "slot": "accessory", "statMods": {},
+               "grants": { "resist": ["ember"], "immuneStatus": [] } } },
   { "id": "quarry_edge", "name": "Quarry Edge", "kind": "weapon", "price": 480,
     "description": "A miner's blade honed on stone.",
     "equip": { "slot": "weapon", "statMods": { "atk": 12 }, "element": "stone",
@@ -501,12 +527,54 @@ row-strings into a tile legend to keep JSON human-editable.
     { "id": "scald_caverns_f1", "kind": "dungeon", "epoch": "verdant",
       "musicId": "bgm_dungeon1", "encounterTableId": "scald_flats",
       "layout": [ "########", "#......#", "#.####.#", "#......#", "########" ],
-      "warps":  [ { "at": [1,1], "toMapId": "world_verdant", "toPos": [40,22], "facing": "down" } ],
+      "warps":  [ { "at": [1,1], "toMapId": "world_verdant", "toPos": [2,2], "facing": "down" } ],
       "npcs":   [],
       "chests": [ { "id": "scald_c1", "pos": [6,3], "itemId": "tonic", "count": 2 } ],
-      "triggers": [ { "pos": [6,1], "kind": "saveSigil" } ] }
+      "triggers": [ { "pos": [6,1], "kind": "saveSigil" } ] },
+    { "id": "world_verdant", "kind": "world", "epoch": "verdant",
+      "musicId": "bgm_overworld",
+      "layout": [ "gggggg", "ggfggg", "ggg~~~", "gggggg" ],
+      "warps":  [ { "at": [1,1], "toMapId": "scald_caverns_f1", "toPos": [1,1], "facing": "up" } ],
+      "npcs":   [], "chests": [], "triggers": [] }
   ]
 }
+```
+
+---
+
+## 7. elements.json
+
+The elemental registry — every `$ref: "elements.id"` in the other six
+schemas (enemy affinity, spell element, item equip element/resist) resolves
+here. See battle-system.md §5 for the precedence rule these ids feed.
+
+### Schema
+
+```json
+{ "type": "array", "items": {
+  "type": "object",
+  "required": ["id", "name"],
+  "properties": {
+    "id":      { "type": "string" },
+    "name":    { "type": "string", "maxLength": 10 },
+    "opposes": { "type": "array", "items": { "$ref": "elements.id" },
+      "description": "thematically-opposing element(s); an authoring aid for pairing weaknesses/resistances, not mechanically enforced by the engine" }
+  } } }
+```
+
+### Example
+
+```json
+[
+  { "id": "ember",    "name": "Ember",    "opposes": ["frost"] },
+  { "id": "frost",    "name": "Frost",    "opposes": ["ember"] },
+  { "id": "storm",    "name": "Storm",    "opposes": ["stone"] },
+  { "id": "stone",    "name": "Stone",    "opposes": ["storm"] },
+  { "id": "gale",     "name": "Gale",     "opposes": ["tide"] },
+  { "id": "tide",     "name": "Tide",     "opposes": ["gale"] },
+  { "id": "radiance", "name": "Radiance", "opposes": ["gloom"] },
+  { "id": "gloom",    "name": "Gloom",    "opposes": ["radiance"] }
+]
 ```
 
 ---
@@ -515,11 +583,12 @@ row-strings into a tile legend to keep JSON human-editable.
 
 ```
 loadAllData()
-  -> for each of the 6 files: structural validation against its schema
+  -> for each of the 7 files: structural validation against its schema
   -> cross-reference pass: every *Id/*Ids field resolves in its target file
      (commandId -> commands, spellId -> spells, itemId -> items,
       enemyIds -> enemies, encounterTableId -> encounterTables,
-      toMapId -> maps, formEnemyId -> enemies, allowedCharacterIds -> characters)
+      toMapId -> maps, formEnemyId -> enemies, allowedCharacterIds -> characters,
+      element/weak/resist/absorb/immune ids -> elements)
   -> sanity pass: every character's commandId unique across roster;
      every map layout rectangular; every warp target in-bounds;
      every glyphstone gpCost > 0; roster size 8-14

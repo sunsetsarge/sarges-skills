@@ -78,7 +78,47 @@ budget for one of:
   recommendation** for production 8-direction sheets rather than continuing
   to fight local generation — Blaine gate (B1 in PLAN.md).
 
-## Walk/idle cycle attempt — a real positive result
+## PixelLab.ai — validated, not just recommended (2026-08-14)
+
+The B1 buy-gate recommendation above was written from research and the
+weight of five failed local attempts, but PixelLab itself hadn't actually
+been tried yet. It has now, using the `mcp__pixellab__*` MCP tools (trial
+account, 40 free generations) — same test case as the failed local attempts
+(a knight character, 8 directions, walk cycle), for a direct comparison:
+
+- **`create_character`** (mode="standard", 1 generation, ~5 min): produced a
+  genuinely correct 8-direction rotation — south is a clean front view, east
+  and west are correct mirrored side profiles, north is a proper back view
+  (helmet from behind, no face) — exactly what all five local attempts
+  failed to produce. This is a fundamentally different technique (skeleton-
+  based, not text-to-multi-panel), which is why it doesn't hit the same
+  capability gap.
+- **`animate_character`** (template="walk", all 8 directions, 8 generations,
+  ~7 min): produced a genuinely smooth 6-frame walk cycle per direction —
+  clear alternating leg/arm articulation, consistent identity throughout,
+  visibly better than even the successful local Qwen-Edit 2-frame test.
+  Unlike the local lever, this covers **all 8 directions in one request**,
+  not just a single pose pair.
+- **QC:** every rotation frame and every animation frame run through
+  `qc_check.py` passed cleanly (true-grid, ≤25 colors, clean binary alpha)
+  with **no pixelize.py step needed at all** — PixelLab's output is already
+  native true-grid pixel art. (Pass the same file as both `--grid` and
+  `--final` args since there's no upscale step; `crisp_upscale` trivially
+  passes at scale_factor=1.)
+- **Cost:** 9 of 40 trial generations for the full test (1 character + 8
+  animation directions). Evidence at `evals/eval-4-pixellab/`.
+
+**Net effect on the recommendation above:** this is no longer "the pragmatic
+choice based on research" — it's confirmed working, on the exact case that
+failed locally, at low cost. If a real 8-direction sheet or multi-direction
+animation is needed, reach for `mcp__pixellab__create_character` +
+`animate_character` directly rather than the local sheet-generation lane.
+The trial account used for this test is shared with the Pixel Sprite
+Generator project — check `mcp__pixellab__get_balance` before spending
+meaningfully, and note the $12/mo tier (B1 in PLAN.md) is still Blaine's
+call for production/recurring use once the trial's 40 generations run out.
+
+## Walk/idle cycle attempt — a real positive result (local generation)
 
 Unlike blind multi-panel generation, **Qwen-Edit-2511 pose edits off a
 single reference image worked.** Method (`scripts/comfy_edit.py`): take one
@@ -112,10 +152,10 @@ binary alpha, verified crisp upscale. Evidence at
 - Doesn't replace the sheet-generation gap above — this is a per-character,
   per-pose-pair workflow, not a one-shot multi-direction sheet.
 
-**Verdict:** promising enough to be the recommended next lever if pushing
-further on local animation (rather than jumping straight to PixelLab), but
-not yet a turnkey walk-cycle pipeline. For production 8-direction ×
-multi-frame work, PixelLab.ai's skeleton animation is still the more
-reliable bet per PLAN.md's original buy-gate — this finding narrows *when*
-to reach for it (single-pose edits: try Qwen-Edit first; full direction ×
-animation matrices: PixelLab is probably worth the $12/mo up front).
+**Verdict:** a real local lever for a single pose edit off an existing
+sprite (not everything needs an API call). But now that PixelLab has been
+directly tested (above) and confirmed to produce cleaner, faster, full-
+8-direction animation in one request, it's the better default for anything
+beyond a one-off pose tweak — reach for Qwen-Edit when you already have a
+specific sprite and need one alternate pose; reach for PixelLab when you
+need a genuine multi-direction sheet or a full animation set.

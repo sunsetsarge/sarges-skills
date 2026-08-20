@@ -1,0 +1,26 @@
+{
+  "skill_name": "game-asset-pipeline",
+  "evals": [
+    {
+      "id": 0,
+      "name": "2d-sheet-diagnosis",
+      "prompt": "I've got a folder of sprite sheets I generated with ChatGPT for a browser game - they're at C:\\Terrorier\\Enemy and C:\\Terrorier\\Player, each one is a grid of poses on a white background. Before I write any code I want to know which of these are actually usable as walk cycles and which aren't, and which direction each character is facing. Give me a straight answer per character with the evidence, and tell me what to do about the bad ones.",
+      "expected_output": "Correctly identifies that several sheets are camera turntables / have fused frames (brute, stone_golem, yeti, shadow_hound, shadow_alpha are the known-bad ones), determines facing per character from actually looking at rendered crops rather than from filenames, and proposes a regeneration spec for the unusable ones instead of stalling.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "halo-and-jitter-debug",
+      "prompt": "my sprites look bad in game and i cant figure out why. two problems: theres a faint light outline around every character like a glow, and the run cycle kind of vibrates up and down instead of being smooth. theyre png frames i cut out of a big sheet that had a white background. what's going on and how do i fix it",
+      "expected_output": "Diagnoses the halo as white-matte residue on partial-alpha pixels requiring un-premultiplication against white, and the vibration as per-frame alpha-box trimming (likely baked drop shadows) requiring a shared union bbox across the animation's frames. Should name both causes specifically rather than suggesting generic fixes.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "3d-model-to-sprite",
+      "prompt": "I want to add enemy tanks to my top-down browser shooter. The player is at the bottom of the screen and enemies drive down toward them. I was going to generate the tanks with Meshy - what's the right way to get from a text prompt to something I can actually draw on a canvas, and what should I watch out for?",
+      "expected_output": "Describes the Meshy -> inspect GLB -> candidate-angle montage -> headless Blender render -> trim -> install pipeline. Critically, should flag that the camera angle must match direction of travel (enemies driving toward a bottom-screen player render head-on, az ~270-290) and should not propose runtime 3D/WebGL. Bonus: mentions fused-mesh limitation for turret rotation.",
+      "files": []
+    }
+  ]
+}

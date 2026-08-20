@@ -21,7 +21,7 @@ description: >-
   the numbered rules here are the bugs and design traps every first ATB
   implementation hits.
 metadata:
-  version: 1.0.0
+  version: 1.1.0
 ---
 
 # SNES-Era JRPG Builder
@@ -41,9 +41,10 @@ synthesized (oscillators + ADSR); all sprites are drawn to canvas from
 palette-limited pixel data or procedural draw calls.
 
 **Data-driven, non-negotiable:** every character, enemy, spell, item, command,
-and map lives in JSON data (inline `const DATA = {...}` blocks in the
+map, and element lives in JSON data (inline `const DATA = {...}` blocks in the
 single-file build, separate `.json` files in a larger build) — never hardcoded
-in logic. Schemas for all six data files are in
+in logic. Schemas for all seven data files (characters, enemies, spells,
+items, commands, maps, elements) are in
 [reference/data-schemas.md](reference/data-schemas.md).
 
 **Godot 4 port note:** the same architecture maps cleanly — data JSON →
@@ -63,7 +64,8 @@ otherwise.
   tables, or the two-act world twist.
 - [reference/data-schemas.md](reference/data-schemas.md) — read before writing
   ANY content data: JSON Schema + filled example for characters, enemies,
-  spells, items, commands, and maps, plus the load-time validator contract.
+  spells, items, commands, maps, and elements, plus the load-time validator
+  contract.
 - [reference/audio-and-visual-style.md](reference/audio-and-visual-style.md) —
   read when implementing music/SFX synthesis or the sprite/palette/tile
   rendering layer.
@@ -95,8 +97,10 @@ the start; change only on request.
 
 Phase the build so something is playable at every step:
 
-1. **Data first.** Write the six data blocks with 2–3 entries each, plus the
-   schema validator. Run validation before any game code exists.
+1. **Data first.** Write the seven data blocks with 2–3 entries each, plus the
+   schema validator. Run validation before any game code exists — run
+   `scripts/validate_data.py --self-test` to see the contract in action, then
+   point it at your data dir at build time.
 2. **Battle vertical slice.** ATB loop + Fight/Item vs one enemy, vector-drawn
    placeholders, victory/defeat states. (This is what
    [examples/atb-loop-demo.html](examples/atb-loop-demo.html) demonstrates —
@@ -186,9 +190,12 @@ is a per-tile-type flag set, not special-cased coordinates.
 ### Data & progression
 
 **14. Schema-validate every data file at load; fail loudly, on screen.**
-Validate all six data files against their schemas before the title screen
+Validate all seven data files against their schemas before the title screen
 renders. Print the file, path, and reason on a visible error screen — a silent
-bad-JSON failure three screens into a session is the worst way to lose an hour.
+bad-JSON failure three screens into a session is the worst way to lose an
+hour. `scripts/validate_data.py` implements this contract standalone —
+`--self-test` runs it against this doc's own examples, or point it at a real
+data directory at build time.
 
 **15. All cross-references are ids, and the validator resolves them.**
 Spells reference element ids, Glyphstones reference spell ids, formations
@@ -257,7 +264,8 @@ Before writing game code, confirm:
 - [ ] Stated the five defaults (save model, ATB Wait, party size, Glyphstone
       mechanic, two-act epoch flag) to the user
 - [ ] Target confirmed: single-file HTML5 (or Godot 4 port explicitly requested)
-- [ ] All six data schemas copied in and the load-time validator written first
+- [ ] All seven data schemas copied in and the load-time validator written
+      first
 - [ ] Original names invented for: game world, all characters, all spells, all
       signature commands, the Glyphstone flavor name, all enemies, all places —
       zero franchise proper nouns

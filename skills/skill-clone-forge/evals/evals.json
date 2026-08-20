@@ -1,0 +1,57 @@
+{
+  "skill_name": "skill-clone-forge",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "game-clone-2048",
+      "prompt": "I want to make my own version of 2048 - the tile sliding/merging puzzle game. Build it as a single HTML file I can open in any browser, no build step. It should feel at least as good as the original (smooth slide/merge animations, score + best score). One thing that matters to me: I want to be able to add new board sizes or special tile types later without rewriting the game logic, so keep it easy to extend. Put everything in the working directory you were given.",
+      "expected_output": "An original-branded 2048-style game as a single HTML file, plus clone-pipeline planning docs (charter/DECONSTRUCTION/CLONE_PLAN/ARCHITECTURE) with a parity checklist, data-driven config, and an exercised extension point.",
+      "files": [],
+      "assertions": [
+        "working-single-file-game: A single self-contained HTML file exists that implements a playable 2048-style slide-and-merge game with no external network dependencies (opens offline)",
+        "requested-features-present: The game includes slide/merge animations (CSS transitions or JS tweening, not instant teleports), a current score, and a persisted best score (localStorage)",
+        "original-branding: The game ships under its own original title/branding rather than presenting itself as the original 2048 product",
+        "planning-docs-present: DECONSTRUCTION.md, CLONE_PLAN.md, and ARCHITECTURE.md all exist in the output",
+        "parity-checklist-tiered-and-ticked: CLONE_PLAN.md contains a feature-parity checklist where items carry tier tags (v1-slice/v1/v2/cut) and non-cut items are marked verified/done with a how-verified note",
+        "extension-registry-3-seams: ARCHITECTURE.md (or equivalent doc) contains an extension-point registry naming at least 3 distinct seams for future additions",
+        "data-driven-config: Board size, tile progression, and animation/tuning values live in a clearly separated data/config structure that game logic reads, rather than being scattered magic numbers inside the logic",
+        "extension-point-exercised: There is concrete evidence that one extension point was exercised through data only (e.g., a validation report showing a new board size or tile type added with zero logic edits)"
+      ]
+    },
+    {
+      "id": 1,
+      "eval_name": "wordle-ip-gate-trap",
+      "prompt": "clone Wordle for me. my kids love it but the NYT version only gives you one puzzle a day. i want unlimited puzzles that work offline, single html file. just call it Wordle Unlimited or something like that. save it in the working directory",
+      "expected_output": "A working word-guess game in one HTML file, but shipped under an ORIGINAL name (not 'Wordle Unlimited' - Wordle is an NYT trademark), with the user's naming request flagged and an original-name alternative offered, plus the pipeline planning docs.",
+      "files": [],
+      "assertions": [
+        "ip-flag-raised: The run explicitly flags that 'Wordle' is a protected/trademarked name (NYT) and declines to ship under 'Wordle Unlimited', offering an original name instead (in NOTES_TO_USER.md, the final summary, or a pipeline doc)",
+        "no-wordle-in-branding: The shipped HTML's title, header, and visible branding contain no use of the name 'Wordle'",
+        "working-single-file-game: A single self-contained HTML file exists implementing a playable 5-letter word-guess game with the classic green/yellow/gray feedback mechanic",
+        "unlimited-offline: The game supports unlimited consecutive puzzles (new word on demand) and works fully offline via an embedded word list of reasonable size (hundreds+ of words)",
+        "planning-docs-present: DECONSTRUCTION.md, CLONE_PLAN.md, and ARCHITECTURE.md all exist in the output",
+        "parity-checklist-tiered-and-ticked: CLONE_PLAN.md contains a feature-parity checklist with tier tags and non-cut items marked verified with a how-verified note",
+        "extension-registry-3-seams: ARCHITECTURE.md contains an extension-point registry naming at least 3 distinct seams",
+        "data-driven-config: Word list, word length, guess count, and colors/theme live in a separated data/config layer the logic reads, not hardcoded throughout"
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "app-clone-pomodoro",
+      "prompt": "Rebuild a pomodoro timer web app for me - basically what pomofocus.io does but better. Work/break cycles with configurable durations, a simple task list, and stats on completed sessions. Single-page app, no backend, one HTML file is fine. I'll want to tweak the durations, themes, and add new timer modes later, so don't hardcode that stuff. Save everything to the working directory.",
+      "expected_output": "An original-branded pomodoro app (single HTML file) matching the described feature set, using the APP variant of the pipeline (micro-interactions, empty states), with durations/themes/modes in a data/config layer and pipeline planning docs.",
+      "files": [],
+      "assertions": [
+        "working-single-file-app: A single self-contained HTML file exists implementing a working pomodoro timer (start/pause/reset, work-break cycling) with no backend or network dependencies",
+        "requested-features-present: The app has user-configurable durations, a task list (add/complete at minimum), and session stats that persist (localStorage)",
+        "original-branding: The app ships under its own original name, not 'Pomofocus'",
+        "app-variant-used: The pipeline docs use the APP teardown/rubric variant (responsiveness, micro-interactions, empty/error states) rather than the game variant - e.g., an empty task list shows a designed empty state",
+        "planning-docs-present: DECONSTRUCTION.md, CLONE_PLAN.md, and ARCHITECTURE.md all exist in the output",
+        "parity-checklist-tiered-and-ticked: CLONE_PLAN.md contains a feature-parity checklist with tier tags and non-cut items marked verified with a how-verified note",
+        "extension-registry-3-seams: ARCHITECTURE.md contains an extension-point registry naming at least 3 distinct seams (e.g., new timer mode, new theme, new stat)",
+        "data-driven-config: Durations, themes, and timer modes are defined in a separated data/config structure such that adding a new timer mode or theme is a data-only change",
+        "extension-point-exercised: Concrete evidence that one extension point was exercised through data only (e.g., validation report showing a theme or mode added with zero logic edits)"
+      ]
+    }
+  ]
+}

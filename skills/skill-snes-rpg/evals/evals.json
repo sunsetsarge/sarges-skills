@@ -1,0 +1,26 @@
+{
+  "skill_name": "skill-snes-rpg",
+  "evals": [
+    {
+      "id": 0,
+      "name": "atb-boss-two-phase-battle",
+      "prompt": "hey can you build me a little retro JRPG style battle screen as a single html file? two heroes vs one big boss monster. i want those bars that fill up over time before each character can act, and the boss should switch to a nastier attack pattern once its health gets low. keep it 16-bit looking. no external files, i want to just double click the html",
+      "expected_output": "Single self-contained HTML with a working ATB battle: gauges pause during menus, boss has an HP-threshold phase change driven by data, dead-target handling, original names only.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "vertical-slice-town-dungeon-save",
+      "prompt": "I want a small 16-bit style RPG vertical slice as one HTML file: a tiny town (a shop that buys/sells and an inn that heals+saves), a short 2-floor dungeon with a boss at the end, random battles while walking around, and saving that survives closing the browser tab. Party of 2-3 characters is fine. Keep the scope small but make each piece actually work.",
+      "expected_output": "One-file playable slice: data-driven content, load-time data validation with visible errors, encounter grace periods, working save/load via localStorage, town+dungeon+boss loop complete.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "add-magic-system-to-demo",
+      "prompt": "here's a battle demo html i have (attached as atb-loop-demo.html). can you add a magic system to it? i want it where characters equip some kind of item/relic thing and learn spells from it by earning points in battles, plus elemental weaknesses on the enemies (fire/ice/etc where some enemies absorb or are immune). don't use final fantasy names for anything, make up original ones.",
+      "expected_output": "Modified demo with an equip-to-learn relic system (data-defined spell lists + point costs), elemental affinity with immune>absorb>resist>weak precedence, original terminology, demo still runs to victory.",
+      "files": ["atb-loop-demo.html"]
+    }
+  ]
+}
