@@ -1,12 +1,12 @@
 ---
 name: digitalnc-harvest
 argument-hint: "<lccn> [--start YYYY] [--end YYYY] [--source digitalnc|chronam] [--ocr]"
-description: Harvest vintage public-domain newspaper pages and advertisements from DigitalNC and the LOC Chronicling America API for the Saspan Salt print-on-demand pipeline. Use whenever the user mentions saspan, digitalnc, chronam, chronicling america, loc.gov, IIIF newspaper download, vintage newspaper ads, ALTO OCR, newspaper harvest, or the ad extractor / ad reviewer / ad selector pipeline. Wraps the validated digitalnc_dl.py and chronam_dl.py downloaders plus the existing extraction pipeline — DO NOT rebuild these from scratch.
+description: Harvest vintage public-domain newspaper pages and advertisements from DigitalNC and the LOC Chronicling America API for a print-on-demand or archival pipeline. Use whenever the user mentions digitalnc, chronam, chronicling america, loc.gov, IIIF newspaper download, vintage newspaper ads, ALTO OCR, newspaper harvest, or the ad extractor / ad reviewer / ad selector pipeline. Wraps the validated digitalnc_dl.py and chronam_dl.py downloaders plus the existing extraction pipeline — DO NOT rebuild these from scratch.
 ---
 
 # DigitalNC / Chronicling America Newspaper Harvest
 
-Sources public-domain vintage newspaper pages, extracts advertisements, and feeds them into the Saspan Salt POD pipeline. This skill **wraps existing, validated scripts** — its job is to run them correctly and avoid the failures already discovered, not to reimplement them.
+Sources public-domain vintage newspaper pages, extracts advertisements, and feeds them into a downstream print-on-demand pipeline. This skill **wraps existing, validated scripts** — its job is to run them correctly and avoid the failures already discovered, not to reimplement them.
 
 ## Operational config
 
@@ -16,12 +16,12 @@ Paths, the Python interpreter, and run defaults live in **`config.json`** (next 
 
 | Script | Location | Purpose |
 |---|---|---|
-| `digitalnc_dl.py` | `D:\DigitalNC_Newspapers\` | DigitalNC downloader (`info`, `download --start --end --max --last-pages --all-pages --ocr`) |
-| `chronam_dl.py` | `D:\Claude Projects\Saspan Salt Vintage Prints\` | LOC Chronicling America downloader, same CLI shape |
-| `ad_extractor.py` | `C:\Claude\Scripts\Python\` (+ Newspaper Cropper) | Auto-detect ads (morphology + pHash + quality ranking) |
-| `ad_reviewer.py` | Newspaper Cropper project | Interactive KEEP/SKIP quality review |
-| `ad_selector.py` | Newspaper Cropper project | Manual page browser, click-drag selection, OCR |
-| `loc_jp2_downloader.py` | `C:\Claude\Scripts\Python\` | Full-res JP2 fetch |
+| `digitalnc_dl.py` | `<CORPUS_ROOT>\` | DigitalNC downloader (`info`, `download --start --end --max --last-pages --all-pages --ocr`) |
+| `chronam_dl.py` | `<SCRIPTS_DIR>\` | LOC Chronicling America downloader, same CLI shape |
+| `ad_extractor.py` | `<SCRIPTS_DIR>\` (+ cropper project) | Auto-detect ads (morphology + pHash + quality ranking) |
+| `ad_reviewer.py` | cropper project | Interactive KEEP/SKIP quality review |
+| `ad_selector.py` | cropper project | Manual page browser, click-drag selection, OCR |
+| `loc_jp2_downloader.py` | `<SCRIPTS_DIR>\` | Full-res JP2 fetch |
 
 Before writing ANY new downloader/extractor, audit these folders first. The downloaders are contract-tested (`test_digitalnc_dl.py`, `test_chronam_dl.py`).
 
@@ -32,7 +32,7 @@ discover/download (digitalnc_dl | chronam_dl)
    → extract ads (ad_extractor)
    → KEEP/SKIP triage  ← local VLM first, Haiku escalation (see Model tiering)
    → human Gate A (ad_reviewer)
-   → into Saspan pipeline (D:\SaspanPipeline\ ledger)
+   → into the downstream pipeline (<PIPELINE_ROOT>\ ledger)
 ```
 
 ## ⚠️ Run on the HOST, not in a sandbox
@@ -71,7 +71,7 @@ The standalone `chroniclingamerica.loc.gov` API was retired in 2025 — everythi
 ## Output contract (both downloaders share it)
 
 ```
-D:\DigitalNC_Newspapers\{lccn}\
+<CORPUS_ROOT>\{lccn}\
     {lccn}_{YYYYMMDD}_p{N}of{TOTAL}.jpg
     {lccn}_{YYYYMMDD}_p{N}of{TOTAL}.txt   (digitalnc_dl --ocr only)
     manifest.jsonl                         (one row per page)
@@ -115,7 +115,7 @@ This is the same condition [[goal]] uses as a harvest finish line ("manifest.jso
 | Crash mid-enumeration (`IncompleteRead`) | TCP drop not caught | add `ChunkedEncodingError` to retry |
 | Write appears truncated ~360 lines | write-tool size limit | write head + append tail, or split modules |
 
-## Adopt-don't-build (per Workspace Optimization Audit 5)
+## Adopt-don't-build
 
 Before extending the pipeline, prefer these over new code:
 - **Newspaper Navigator (LoC)** — pre-extracted ADVERTISEMENT bounding boxes + embeddings for 16.3M ChronAm pages. **Can replace the ad-detection step for the ChronAm corpus** and enables "find more ads like this best-seller." (bcglee.github.io/newspaper-navigator.html)
@@ -133,7 +133,5 @@ Before extending the pipeline, prefer these over new code:
 
 ## Cross-references
 
-- Full API methods & gotchas: Confluence Addendum 10 (page 63209474)
-- Saspan Operations Manual: Confluence 65273857 · Pipeline v2: 64749570
-- Reference doc on disk: `D:\Claude Projects\Saspan Salt Vintage Prints\NEWSPAPER_API_SOURCES.md`
+- Reference doc on disk: `<SCRIPTS_DIR>\NEWSPAPER_API_SOURCES.md`
 - Re-validation harnesses: `probe_digitalnc.py`, `probe_loc.py` in the same workspace

@@ -28,7 +28,7 @@ partially offload; slower but correct). Server: `http://127.0.0.1:8000` via the 
 | **Niche style / pose control / character LoRA** | `dreamshaperXL_v21TurboDPMSDE.safetensors` or `juggernautXL_ragnarokBy.safetensors` + `controlnet-union-sdxl-promax.safetensors` | XL Turbo: 8 steps CFG 2–3 dpmpp_sde; Juggernaut: 25–30 steps CFG 4–6. 80 LoRAs installed | OpenRAIL++ |
 | **Finish / 2K upscale** | `4x-UltraSharp.pth` | model upscale ×4 then scale ×0.5 → clean 2×. Template: `studio-upscale-finish.json` | — |
 
-License guardrail (Blaine sells products): **Apache models only for anything commercial** — Qwen
+License guardrail (commercial use): **Apache models only for anything commercial** — Qwen
 family and Z-Image. FLUX.1 dev, FLUX.2 klein **9B**, and Kontext dev are non-commercial: drafts and
 personal use only.
 
@@ -88,7 +88,7 @@ If a generation misses, **name the lever — don't just reroll:**
 | Washed out / flat | It's the finish: model-upscale pass, or on Z-Image add "high contrast, deep shadows" — do NOT chain a second full-denoise generation pass (hallucination risk, skill-comfyui CUI-LL-007) |
 | Solid black ~0 KB PNG, job "succeeded" | VAE/dtype trap: `--fp16-vae` + SDXL base VAE, or Z-Image under sage-attention. Use the templates' stock VAEs; launch flags per bundled `comfyui-launch-flags` skill |
 | OOM | `clear_vram` between model families (one family loaded at a time on 10 GB); retry once; then drop to the klein draft or SDXL row |
-| MCP says "fetch failed" / server dead | ComfyUI Desktop crashes under system-RAM pressure from repeated GGUF family switches — don't churn families. Recovery: kill ComfyUI.exe, wait ~10 s, relaunch from `C:\Users\blain\AppData\Local\Programs\@comfyorgcomfyui-electron\`; verify `/system_stats` answers on **8000** (a too-fast relaunch binds 8188 and the MCP is pinned to 8000). Fallback that always works: `C:\ComfyUI\.venv\Scripts\python.exe C:\Users\blain\ComfyUI-Installs\ComfyUI\ComfyUI\main.py --port 8000 --base-directory C:/ComfyUI` |
+| MCP says "fetch failed" / server dead | ComfyUI Desktop crashes under system-RAM pressure from repeated GGUF family switches — don't churn families. Recovery: kill ComfyUI.exe, wait ~10 s, relaunch from `<YOUR_COMFYUI_DESKTOP_DIR>\`; verify `/system_stats` answers on **8000** (a too-fast relaunch binds 8188 and the MCP is pinned to 8000). Fallback that always works: `C:\ComfyUI\.venv\Scripts\python.exe <YOUR_COMFYUI_INSTALL>\main.py --port 8000 --base-directory C:/ComfyUI` |
 | Every safetensors load errors `'ModelMMAP' object has no attribute 'get_file_handle'` | `comfy-aimdo` version mismatch (0.3.0 vs required 0.4.10) — force-reinstall it into `C:\ComfyUI\.venv` and restart (hit + fixed 2026-07-04) |
 
 ## Templates (assets/workflows/)
