@@ -1,5 +1,7 @@
 # PLAN — skill-snes-rpg Optimization (Fable-authored, Opus/Sonnet-executed)
 
+**⚠️ INTERNAL DEVELOPMENT DOCUMENTATION** — This is a development plan for skill maintainers and should not be treated as user-facing documentation. For skill usage, see `SKILL.md`.
+
 Author: Fable 5 session, 2026-07-11. Executor: any later Opus or Sonnet session — no Fable
 required. Read STATE.md first; execute phases in order; each phase ends with its acceptance
 criteria verified and a STATE.md update (session-handoff wrap).

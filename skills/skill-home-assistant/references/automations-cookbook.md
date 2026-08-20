@@ -60,7 +60,7 @@ Verified against home-assistant.io docs (automation basics/trigger/condition/act
 | **time_pattern** | `hours`/`minutes`/`seconds` | `{trigger: time_pattern, minutes: "/15"}` |
 | **sun** | `event: sunset/sunrise`, `offset` | `{trigger: sun, event: sunset, offset: "-00:30:00"}` |
 | **sun (elevation)** | use `numeric_state` on `sun.sun` `sun_elevation` attribute — sun trigger itself has no elevation param; template trigger is the common alternative | see §3c |
-| **zone** | `entity_id`, `zone`, `event: enter/leave` | `{trigger: zone, entity_id: person.blaine, zone: zone.home, event: enter}` |
+| **zone** | `entity_id`, `zone`, `event: enter/leave` | `{trigger: zone, entity_id: person.<your-name>, zone: zone.home, event: enter}` |
 | **device** | integration-defined, authored via UI picker; YAML varies | not hand-authored — pull from UI export |
 | **template** | `value_template`, `for` | `{trigger: template, value_template: "{{ is_state('device_tracker.phone','home') }}"}` |
 | **mqtt** | `topic`, `payload` | `{trigger: mqtt, topic: "shellies/kitchen/relay/0", payload: "on"}` |
@@ -81,7 +81,7 @@ conditions:
     after: "07:00:00"
     before: "22:00:00"
   - condition: zone
-    entity_id: person.blaine
+    entity_id: person.blaine     # REPLACE — use your own person entity
     zone: zone.home
   - condition: template
     value_template: "{{ states('sensor.washer_power') | float > 5 }}"
@@ -163,7 +163,7 @@ actions:
 
   # run several action chains concurrently
   - parallel:
-      - action: notify.mobile_app_blaines_phone
+      - action: notify.mobile_app_blaines_phone   # REPLACE — use your own notify service
         data: { message: "Left home" }
       - action: climate.set_temperature
         target: { entity_id: climate.house }

@@ -11,9 +11,9 @@ top model plans and judges; Sonnet executes; Haiku grinds.
 |---|---|
 | Builder skill (canonical, git) | `C:\Claude\sarges-skills\skills\research-access-builder\` → github `sunsetsarge/sarges-skills` |
 | Installed MCP server (live) | `C:\Claude\research-access-mcp\` (venv at `.venv\`, currently Python 3.10.6 from `C:\AI-Shared\python.exe` because the machine's 3.12 is broken — missing python312.dll) |
-| MCP registration | user scope in `C:\Users\blain\.claude.json` — `claude mcp list` should show `research-access ✓` |
-| Companion usage skill | `C:\Users\blain\.claude\skills\research-access\` (plain copy, NOT a junction) |
-| Env vars (User level) | `UNPAYWALL_EMAIL=blaine.cully@gmail.com` (required), `RESEARCH_PDF_DIR=D:\Documents\Papers`. Optional/unset: `OPENALEX_API_KEY`, `SEMANTIC_SCHOLAR_API_KEY`, `CORE_API_KEY`, `SERPAPI_API_KEY` |
+| MCP registration | user scope in `%USERPROFILE%\.claude.json` — `claude mcp list` should show `research-access ✓` |
+| Companion usage skill | `%USERPROFILE%\.claude\skills\research-access\` (plain copy, NOT a junction) |
+| Env vars (User level) | `UNPAYWALL_EMAIL=<your-email>` (required; use your email address for Unpaywall), `RESEARCH_PDF_DIR=<your-pdf-dir>` (e.g., `D:\Documents\Papers`). Optional/unset: `OPENALEX_API_KEY`, `SEMANTIC_SCHOLAR_API_KEY`, `CORE_API_KEY`, `SERPAPI_API_KEY` |
 | Runtime cache / logs | `%LOCALAPPDATA%\research-access\cache.db` (SQLite) and `log.jsonl` |
 | Spec + acceptance record | `Projects\Research_Access_Builder\PLAN.md` |
 | Confluence log (canonical copy) | SD space, page **80609315** under Project Logs |
@@ -26,7 +26,7 @@ the installed dir (or re-run scaffold) → commit/push → bump the Confluence p
 ## 2. Health-check protocol (run monthly, or before heavy use, or when a tool misbehaves)
 
 ```powershell
-$env:UNPAYWALL_EMAIL='blaine.cully@gmail.com'
+$env:UNPAYWALL_EMAIL='<your-email>'  # set to your email address
 & C:\Claude\research-access-mcp\.venv\Scripts\python.exe C:\Claude\research-access-mcp\health_check.py --full
 ```
 
@@ -94,7 +94,7 @@ Reinforcing data (2026-07, RSD download run — 8/9 failed by DOI, all genuinely
 
 ## 6. Blaine's one-page quick reference
 
-- **Use it:** just ask Claude — "find papers on X", "get the PDF for DOI Y", "bibtex for Z". The `research-access` skill + MCP tools handle it. PDFs land in `D:\Documents\Papers`.
+- **Use it:** just ask Claude — "find papers on X", "get the PDF for DOI Y", "bibtex for Z". The `research-access` skill + MCP tools handle it. PDFs land in your configured `RESEARCH_PDF_DIR`.
 - **Check it:** paste into any Claude session → *"Run the research-access health check and triage any failures per MAINTENANCE.md."*
 - **Improve it:** paste → *"Read C:\Claude\sarges-skills\skills\research-access-builder\MAINTENANCE.md and execute backlog item B<n> following the section-3 protocol. Delegate coding to Sonnet; report with verbatim test output."*
 - **Reinstall / new machine:** *"Use the research-access-builder skill to set up paper search."*

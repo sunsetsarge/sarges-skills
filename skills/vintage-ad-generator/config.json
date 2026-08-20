@@ -5,9 +5,9 @@
   "comfyui_url": "http://127.0.0.1:8188",
   "comfyui_launch": ".\\.venv\\Scripts\\python.exe main.py --highvram --fast --fp16-vae",
   "output_dir": "C:\\ComfyUI\\output",
-  "project_dir": "C:\\Users\\blain\\OneDrive\\Documents\\Claude\\Projects\\Local_Image_Gen",
+  "project_dir": "<set-to-your-project-directory>",
   "composite_script": "scripts/make_tee_mock.py",
-  "corpus_ad_crops": "D:\\DigitalNC_Newspapers\\BrunswickCounty_pre1970\\_ad_crops",
+  "corpus_ad_crops": "<set-to-your-ad-crops-source-directory>",
   "defaults": {
     "checkpoint": "dreamshaper_8.safetensors",
     "width": 512,
