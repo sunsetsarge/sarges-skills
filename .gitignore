@@ -33,3 +33,6 @@ skills/chatgpt-desktop/scripts/*.png
 **/STATE.md
 **/*-workspace/
 /reference/
+
+__pycache__/
+*.pyc
