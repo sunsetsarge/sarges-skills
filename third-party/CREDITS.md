@@ -13,6 +13,14 @@ Provenance pool (the marketplaces configured in `~/.claude/settings.json`): `rod
 | `drawio-skill` | Agents365-ai — github.com/Agents365-ai/drawio-skill | **MIT** | Bundles lobe-icons (MIT) + jgraph/drawio-mcp (Apache-2.0); draw.io desktop by jgraph |
 | `meshy-3d-generation` | meshy-dev — github.com/meshy-dev/meshy-3d-agent | **MIT** | Meshy AI API client |
 | `meshy-3d-printing` | meshy-dev — github.com/meshy-dev/meshy-3d-agent | **MIT** | Meshy AI API + slicer integration |
+| `rpgmaker-core`, `rpgmaker-dialog`, `rpgmaker-database`, `rpgmaker-events`, `rpgmaker-consistency` | nightquill — github.com/nightquill/rpgmaker-agent-skills | **MIT** | **Vendored** at `third-party/rpgmaker-agent-skills/` (LICENSE preserved) @ `4766c49`, installed 2026-08-08. Junctioned into `~/.claude/skills/`. Each `SKILL.md` carries an appended `## LOCAL INSTALL NOTE` block (pack root, `C:\AI-Shared\python.exe`, Stormlight default project, MCP-vs-skills division of labor) — strip or re-apply that block when updating from upstream. |
+
+### Added 2026-08-15 — Reddit skills-thread audit intake
+
+| Skill(s) | Author / Homepage | License | Notes |
+|---|---|---|---|
+| `task-observer` | Eoghan Henn / rebelytics — github.com/rebelytics/one-skill-to-rule-them-all | **CC BY 4.0** | **Vendored** at `third-party/one-skill-to-rule-them-all/` (LICENSE.txt preserved) @ `281f134`, installed 2026-08-15. Junctioned into `~/.claude/skills/task-observer`. SKILL.md sits at repo root — junction targets the pack root, no nested skill dir. Left byte-identical to upstream (no LOCAL INSTALL NOTE block) so it updates cleanly; provenance in `VENDORED.md`. **Needs a CLAUDE.md activation line** — description matching alone is not enforceable and it will nag once per session until added. Writes to `<workspace>/skill-observations/log.md`; pin a stable log path before real use. |
+| `rootnode-critic-gate`, `rootnode-mode-router`, `rootnode-repo-hygiene`, `rootnode-skill-builder`, `rootnode-cc-design` | drayline — github.com/drayline/rootnode-skills | **Apache-2.0** | **Vendored** at `third-party/rootnode-skills/` (LICENSE preserved, no NOTICE upstream) @ `6350e2b`, release catalog-v4.0, installed 2026-08-15. **5 of 27 junctioned** — upstream's surface map marks the other 22 as chat-Project-only; junctioning all 27 would pollute Claude Code skill-selection. 24 `-cp.zip` chat bundles staged at `third-party/rootnode-skills/_chat-project-bundles/` for manual upload (release assets, not in the git tree). `critic-gate` + `mode-router` are inert until a profile from the chat-side `rootnode-profile-builder` exists. `cc-design` REMEDIATE consumes `HYGIENE_REPORT.md` from `repo-hygiene` — run hygiene first. |
 
 ## License unconfirmed (no LICENSE file shipped)
 
