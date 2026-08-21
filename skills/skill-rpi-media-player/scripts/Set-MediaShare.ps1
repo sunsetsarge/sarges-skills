@@ -3,7 +3,7 @@
 # Purpose: One-action, idempotent setup of a secure read-only SMB media share
 #          for Raspberry Pi / Kodi clients (skill-rpi-media-player).
 # Created: 2026-07-04
-# Author: Claude AI (for Blaine)
+# Author: Claude AI
 # Version: 1.0
 # ============================================
 # Creates/repairs: dedicated read-only local account, NTFS read ACL, SMBv2/v3
@@ -38,7 +38,7 @@ $ErrorActionPreference = 'Stop'
 $ScriptName = 'Set-MediaShare'
 
 # --- LOGGING ---------------------------------------------------------------
-# Use Blaine's shared logging library when present; otherwise self-contained
+# Use a shared logging library when present; otherwise self-contained
 # fallback so the packaged skill works on any Windows machine.
 $LoggingLib = 'C:\Claude\Scripts\PowerShell\Logging_Functions.ps1'
 if (Test-Path $LoggingLib) {

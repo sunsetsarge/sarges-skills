@@ -1,6 +1,6 @@
 # Variant D — Pi as Headless Plex SERVER, Apple TV / Infuse as Clients
 
-Proven live on Blaine's "mediapi" build (2026-07-05 → 07-12). Use this variant when the TVs
+Proven live on a reference "mediapi" build (2026-07). Use this variant when the TVs
 already have good players (Apple TV, streaming sticks, smart TVs) — the Pi then serves files
 instead of being the player. This **inverts** the skill's default (Kodi ON the Pi).
 

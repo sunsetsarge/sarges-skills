@@ -151,7 +151,7 @@ hardware decode on either. High-bitrate 4K over Wi-Fi will stutter regardless of
    min SMBv2 / max SMBv3), don't downgrade security.
 3. **Windows 11 24H2 Pro enforces SMB signing → guest/anonymous shares silently fail**
    from Linux clients. Always use the dedicated local account; never rely on guest access,
-   and never use Blaine's real login for a share credential.
+   and never use your own real login for a share credential.
 4. **Kodi browsing (`smb://` in the file dialog) uses NetBIOS discovery and often shows
    nothing on modern networks.** Type the full path manually (server-name or IP). Not a
    firewall bug; don't chase it.

@@ -182,6 +182,40 @@ between a render that sits in the scene and one that belongs in it.
 
 ---
 
+## Fail-loud assertions — check these, do not "remember" them
+
+The rules above are the knowledge; these are the gates. Each one names a failure that
+has actually shipped. Keep the assertion names stable — tooling cites them.
+
+**`ASSERT_FORWARD_AXIS`** — *confirm the GLB's forward axis before rendering candidates.*
+Run the inspect step (mesh count / bbox / longest axis) and record which axis is forward
+**before** any candidate montage. Rendering a candidate sweep against an assumed forward
+axis burns a full render round-trip and produces a montage where every option is wrong
+the same way. If the forward axis cannot be determined from the geometry, render a single
+axis-probe still first — do not proceed on a guess.
+
+**`ASSERT_FACING_FROM_RENDER`** — *verify facing from a rendered test still, never from a
+filename or a caption.* `enemy_front.png`, a prompt that said "front view", and a Meshy
+thumbnail caption are all claims, not evidence. The only acceptable proof that a sprite
+faces the direction of travel is a rendered still (or, for animated models, a multi-frame
+sweep per Rule 8) looked at against the on-screen motion direction. Never let a name
+stand in for the check.
+
+**`ASSERT_MIN_FRAMES`** — *declare a minimum frame count per asset and fail unless the
+asset is explicitly marked degraded.* Every animated asset carries a declared minimum
+frame count. Producing fewer frames is a hard failure, not a silent shortfall — the only
+way to ship under the minimum is an explicit `degraded: true` marking on that asset,
+which makes the compromise visible downstream instead of discovering it as jitter in the
+running game.
+
+**`ASSERT_SHARED_PALETTE`** — *Track B quantisation must use one shared palette across
+all frames.* Per-frame quantisation picks different cluster centres frame to frame and
+produces visible colour flicker. Pool all frames, build the palette once, map every frame
+to that one palette (`quantize_shared()`), and fail if any frame was quantised
+independently. This is the Track B counterpart of Rule 6's shared union bbox.
+
+---
+
 ## Costs
 
 ~20–40 Meshy credits per model (preview + refine). Check `GET /openapi/v1/balance`.

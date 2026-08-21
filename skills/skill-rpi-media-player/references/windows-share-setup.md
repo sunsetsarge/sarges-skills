@@ -47,7 +47,7 @@ From an **elevated** PowerShell prompt in the skill's `scripts\` folder:
 .\Set-MediaShare.ps1 -MediaPath "D:\Videos" -ShareName "Video" -ShareUser "kodi" -ResetPassword
 ```
 
-It logs via `C:\Claude\Scripts\PowerShell\Logging_Functions.ps1` when present (Blaine's
+It logs via `C:\Claude\Scripts\PowerShell\Logging_Functions.ps1` when present (an optional
 standard logging library), otherwise to console + a local log file.
 
 ## 3. Security model
