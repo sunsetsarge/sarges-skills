@@ -33,7 +33,7 @@ on the model tier that wrote it — a Sonnet session can resume what a Fable ses
      screenshot taken). Unverified subagent claims are logged under `UNVERIFIED`, not `DONE`
      — per the standing verify-subagent-claims rule.
 3. **Publish the session log to Confluence** (SD space, cloudId `<YOUR_CONFLUENCE_CLOUD_ID>`):
-   - Find the project's existing page under **Project Logs**. Append a session entry —
+   - Find the project's existing hub/log page in its domain folder (see the Space Map on the home page, or the project's own memory entry, for which folder). Append a session entry —
      **never create a duplicate page** if one exists (append-don't-duplicate rule).
    - Confluence update = **full-body replace**: GET the full body, insert the new entry, resubmit,
      then verify the live page actually contains it. Supply a `versionMessage`.

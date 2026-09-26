@@ -82,8 +82,8 @@ builder's self-report. 17/17 ×3: automated checks pass three consecutive
 runs; a manual smoke test happens regardless of how green CI is.
 
 **Output: validation report** in-repo (scores, evidence links, A/B notes,
-the modularity-proof diff hash, open trade-offs) + project log under
-Confluence `98494`.
+the modularity-proof diff hash, open trade-offs) + project log under the
+clone project's own domain-folder hub in Confluence.
 
 ## Failure playbook
 

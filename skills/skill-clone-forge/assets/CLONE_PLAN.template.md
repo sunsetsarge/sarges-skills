@@ -1,8 +1,9 @@
 # CLONE_PLAN — <Clone Name> (← <Target>)
 
 > Canonical copy: this file at the repo root. Survivor copy: Confluence, under
-> Project Logs hub (ancestor 98494) — update both at each phase gate; repo
-> wins if they disagree.
+> this clone project's own domain-folder hub (e.g. Games & Game Dev, 130711554,
+> for a game clone) — update both at each phase gate; repo wins if they
+> disagree.
 
 **Repo:** `C:\Claude\Projects\Active\<Project>\`
 **Status:** Phase <n> — <one line>

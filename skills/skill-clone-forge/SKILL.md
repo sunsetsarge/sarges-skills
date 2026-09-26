@@ -27,7 +27,7 @@ metadata:
 
 | Source Page | Page ID | Content |
 |-------------|---------|---------|
-| Project Logs hub | 98494 | Clone project logs live here |
+| Games & Game Dev (domain folder) | 130711554 | Clone project logs live here (a non-game clone uses its own relevant domain folder instead) |
 | (add clone session-lessons pages as they accrue) | — | — |
 
 **Last synced:** <date> | **Source version:** clone-forge v1.0
@@ -71,8 +71,9 @@ Templates to instantiate (copy into the repo, don't write from scratch):
   root; commit per milestone; `git bundle create <project>.bundle --all` at
   each phase gate for durability.
 - **`CLONE_PLAN.md` at repo root is canonical.** Keep a Confluence survivor
-  copy under the Project Logs hub (ancestor `98494`). Repo wins if they
-  disagree.
+  copy under the clone project's own domain-folder hub (e.g. **Games & Game
+  Dev**, 130711554, for a game clone — use the relevant domain folder for an
+  app clone). Repo wins if they disagree.
 - **Model tiering — tag every phase:** Phases 0–3 and the Phase 5 judgment are
   **Fable/Opus** (plan/architect/judge). Phase 4 build is **Sonnet agents with
   an Opus architect-reviewer**. Never trust an executor's self-report — the
@@ -184,8 +185,8 @@ Read quality-and-parity.md §Validation. Four checks, all evidence-backed:
    needs a code change, the registry lied; fix the seam.
 4. **Improvement thesis shipped:** the measurable "better" is demonstrable.
 
-**Output: a validation report** (in-repo + project log under `98494`). No
-gate, no "done."
+**Output: a validation report** (in-repo + project log under the clone
+project's own domain-folder hub). No gate, no "done."
 
 ## Hard-Won Rules
 
@@ -246,7 +247,8 @@ gate, no "done."
     inferior, and "we'll polish later" is how it ships that way.
 14. **Repos live off OneDrive; bundle + survivor-copy for durability.** Git at
     `C:\Claude\Projects\Active\`, `git bundle` at each gate, Confluence
-    survivor copy under `98494`. OneDrive has eaten canonical docs before;
+    survivor copy under the clone project's own domain-folder hub. OneDrive
+    has eaten canonical docs before;
     repo is canonical when they disagree.
 
 ## Pre-Build Checklist
@@ -261,7 +263,8 @@ Before writing any product code, confirm:
 - [ ] `ARCHITECTURE.md`: data schema drafted, module contracts written,
       extension-point registry has ≥3 named seams
 - [ ] Repo at `C:\Claude\Projects\Active\<Project>\`, git initialized,
-      Confluence survivor copy created under `98494`
+      Confluence survivor copy created under the clone project's own
+      domain-folder hub
 - [ ] Phases tagged with model tier; TaskCreate list exists
 
 ## Post-Build Validation
@@ -278,4 +281,4 @@ Before calling the clone done:
       test passed
 - [ ] Judge (non-builder, top-tier model) verified against raw artifacts
 - [ ] Milestone commits + fresh git bundle + Confluence survivor copy current
-- [ ] Validation report written; project log under `98494` updated
+- [ ] Validation report written; project log under the clone project's own domain-folder hub updated
