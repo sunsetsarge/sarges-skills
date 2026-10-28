@@ -117,6 +117,7 @@ Working code beats a description of working code. All paths relative to this ski
 
 | Script | Does |
 |---|---|
+| `cut_cells.py` | **Start here for any generated sheet.** Sheet → equal-size cells that never crop a sprite: finds the sprites first, sizes one cell to the largest, places each on a shared anchor (`center` or `bottom`). Strips grid lines and labels, keys any flat matte, `--split` exports loose debris pieces, `--size` downscales, writes manifest + dark contact sheet. Works on any path |
 | `slice_sheet.py` | Sheet → per-frame PNGs. Matte detection, row bands, frame clustering, caption stripping. Modes `grid` / `gaps` / `auto` |
 | `sync_assets.py` | Frames → one WebP grid per character + `manifest.json`. Union crop, facing bake, uniform scale, defringe |
 | `audit_facing.py` | One labelled crop per character so facing can be read by eye |
