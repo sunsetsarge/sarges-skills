@@ -120,6 +120,7 @@ Working code beats a description of working code. All paths relative to this ski
 | `cut_cells.py` | **Start here for any generated sheet.** Sheet → equal-size cells that never crop a sprite: finds the sprites first, sizes one cell to the largest, places each on a shared anchor (`center` or `bottom`). Strips grid lines and labels, keys any flat matte, `--split` exports loose debris pieces, `--size` downscales, writes manifest + dark contact sheet. Works on any path |
 | `slice_sheet.py` | Sheet → per-frame PNGs. Matte detection, row bands, frame clustering, caption stripping. Modes `grid` / `gaps` / `auto` |
 | `sync_assets.py` | Frames → one WebP grid per character + `manifest.json`. Union crop, facing bake, uniform scale, defringe |
+| `ase_pack.py` (+ `ase_pack.lua`) | Equal-size frames or an equal-cell sheet → Aseprite source file + RGBA sheet + Aseprite JSON, by running Aseprite headless. Named animation tags with direction and timing, optional palette lock (`--palette nes` or `--max-colors N`), anchor slice. Use instead of `sync_assets.py` when the engine reads Aseprite JSON or the art should stay editable. Verifies its own output; `ase_pack_selftest.py` runs 9 tests. See `references/lane-2d-sheets.md` §Stage B-alt |
 | `audit_facing.py` | One labelled crop per character so facing can be read by eye |
 | `zoom_check.py` | High-zoom N-frames-per-row view. Settles facing arguments |
 | `contact_row.py` | Every frame of a row with indices. Exposes turntables |

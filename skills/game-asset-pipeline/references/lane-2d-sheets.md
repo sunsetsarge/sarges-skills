@@ -161,3 +161,35 @@ that reads as an opaque background.
 `qa_packed.py <out.png> <zoom> <key>:<anim> …` renders the **packed** output on a dark
 checkerboard with a ground line drawn. Halos, clipped edges and baseline drift are
 only judgeable here, at size, after packing — not from the source sheet.
+
+## Stage B-alt — frames → Aseprite source + sheet + JSON (`scripts/lane-2d/ase_pack.py`)
+
+Use this instead of `sync_assets.py` when the engine reads Aseprite's JSON (Godot,
+Phaser, Unity importers), when animations need names, loop direction and timing as
+data, or when the art should stay editable in Aseprite afterwards. It needs Aseprite
+installed (Steam build found automatically) and runs it headless.
+
+The input must already be equal-size frames, so run `cut_cells.py --format png` first:
+
+```
+python cut_cells.py sheet.png cells/ --name knight --rows 3 --cols 3 --anchor bottom --format png
+python ase_pack.py out/ --name knight --frames "cells/knight_[0-9]*.png" \
+    --tags "turn:1-8" --fps 6 --max-colors 16 --pivot bottom-center
+```
+
+That writes `knight.aseprite` (tags, timing, locked palette), `knight.png` (RGBA
+sheet) and `knight.json` (frames, `meta.frameTags`, `meta.slices`). A clean
+equal-cell sheet can go straight in with `--sheet PNG --cell WxH --row-tags a,b,c`.
+
+Rules it enforces, each learned the hard way:
+
+- **Frames of different sizes are an error**, never padded. Padding moves the anchor.
+- **Palette lock keeps transparency.** Soft alpha is made binary first, index 0 is a
+  spare transparent entry, and the opaque-pixel count is compared before and after.
+- **No per-frame trim by default.** `--trim` is opt-in and the engine must then apply
+  `spriteSourceSize`, or the walk cycle jitters (spine rule 2).
+- **It never touches the real Aseprite settings.** Each run uses a throwaway config
+  folder (`ASEPRITE_USER_FOLDER`).
+
+The glob matters: `cells/knight_*.png` would also pick up `knight_contact.png`.
+`python ase_pack_selftest.py` re-checks the tool after an Aseprite update.
