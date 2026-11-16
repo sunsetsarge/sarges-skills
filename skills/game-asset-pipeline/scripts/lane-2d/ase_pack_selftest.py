@@ -1,5 +1,6 @@
 """Self-test for ase_pack.py: builds synthetic fixtures with Pillow in a temp folder, runs
-tests T1-T8 (plus a T9 regression) against the real Aseprite (headless), and exits 0 only if every test passes.
+tests T1-T8 (plus a T9 regression) and the v1.1 --defringe tests T10-T12 against the real Aseprite
+(headless), and exits 0 only if every test passes.
 
   C:\\AI-Shared\\python.exe ase_pack_selftest.py
 
@@ -8,11 +9,13 @@ and that the real config folder %APPDATA%\\Aseprite\\files has the same file cou
 """
 import colorsys, json, os, re, shutil, subprocess, sys, tempfile, traceback
 from pathlib import Path
-from PIL import Image, ImageDraw
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 HERE = Path(__file__).resolve().parent
 TOOL = HERE / 'ase_pack.py'
 MAGENTA = (255, 0, 255)
+WHITE = (249, 248, 248)                                      # #f9f8f8, the fringe colour
+GLINT = (4, 6)                                               # enclosed white pixel, inside the rectangle of make_cell
 NES_GPL = Path(r'C:\Program Files (x86)\Steam\steamapps\common\Aseprite\data\extensions\hardware-palettes\nes.gpl')
 
 
@@ -54,6 +57,34 @@ def make_sheet(path):
     # the cells as they must come out (magenta keyed to transparent), in kept order
     return [expected_keyed(sheet.crop(((i % 4) * 16, (i // 4) * 16, (i % 4) * 16 + 16, (i // 4) * 16 + 16)))
             for i in range(10)]
+
+
+def make_ring_sheet(path):
+    """The T1 sheet where every non-empty cell's shape also has a 1-pixel white ring around its outside
+    plus one white pixel enclosed inside the shape. Returns (the cells as they must come out of --defringe,
+    i.e. the same fixture drawn without the ring, and the number of ring pixels drawn in all)."""
+    sheet = Image.new('RGBA', (64, 48), MAGENTA + (255,))
+    expected, ring_total = [], 0
+    for i in range(10):
+        base = make_cell(i, (16, 16))
+        base.putpixel(GLINT, WHITE + (255,))
+        mask = base.getchannel('A')
+        ring = ImageChops.subtract(mask.filter(ImageFilter.MaxFilter(3)), mask)   # 8-neighbour dilation minus the shape
+        ring.putpixel((0, 0), 0)                  # keep the sheet's top-left pixel magenta, so --key auto still finds the key
+        ring_total += sum(1 for v in ring.getdata() if v)
+        ringed = base.copy()
+        ringed.paste(Image.new('RGBA', base.size, WHITE + (255,)), (0, 0), ring)
+        cell = Image.new('RGBA', base.size, MAGENTA + (255,))
+        cell.alpha_composite(ringed)
+        sheet.paste(cell, ((i % 4) * 16, (i // 4) * 16))
+        expected.append(expected_keyed(base))     # make_cell's line is exactly magenta for i=7, so --key removes it, as in T1
+    sheet.save(path)
+    return expected, ring_total
+
+
+def light_opaque(im, n=180):
+    """Opaque pixels with min(R,G,B) > n."""
+    return sum(1 for p in im.convert('RGBA').getdata() if p[3] > 0 and min(p[:3]) > n)
 
 
 def expected_keyed(im):
@@ -292,7 +323,56 @@ def t9(c):
     return f'5 frames, {len(rects)} unique sheet rectangles, palette-lock check passes'
 
 
-TESTS = [('T1', t1), ('T2', t2), ('T3', t3), ('T4', t4), ('T5', t5), ('T6', t6), ('T7', t7), ('T8', t8), ('T9', t9)]
+RING_ARGS = ['--key', 'auto', '--row-tags', 'idle,walk,attack', '--fps', 8]
+
+
+def t10(c):
+    out = c.tmp / 't10'
+    o = must_run_ok([out, '--name', 'hero', '--sheet', c.ring_sheet, '--cell', '16x16'] + RING_ARGS + ['--defringe'])
+    j, png = load_out(out, 'hero')
+    assert len(frame_list(j)) == 10, f'{len(frame_list(j))} frames'
+    for i in range(10):
+        cell = cell_of(j, png, i)
+        n_light = light_opaque(cell)
+        assert n_light == 1, f'frame {i}: {n_light} light opaque pixels left, expected exactly the enclosed one'
+        assert cell.convert('RGBA').getpixel(GLINT)[:3] == WHITE and cell.convert('RGBA').getpixel(GLINT)[3] > 0, \
+            f'frame {i}: the enclosed white pixel at {GLINT} was not kept'
+        n, want = opaque_pixels(cell), opaque_pixels(c.ring_expected[i])
+        assert n == want, f'frame {i}: {n} opaque px, the ring-free fixture has {want}'
+        assert same_art(cell, c.ring_expected[i]), f'frame {i} differs from the ring-free fixture'
+    m = re.search(r'defringe: (\d+) px removed \(threshold 180\)', o)
+    assert m, f'no defringe summary line in the output:\n{o}'
+    removed = int(m.group(1))
+    assert removed > 0, 'defringe reported 0 px removed'
+    assert removed == c.ring_total, f'reported {removed} px removed, the fixture drew {c.ring_total} ring pixels'
+    return f'10 frames, exactly 1 light px left per frame (the enclosed one), opaque px per frame match the ring-free fixture, "defringe: {removed} px removed (threshold 180)"'
+
+
+def t11(c):
+    out = c.tmp / 't11'
+    o = must_run_ok([out, '--name', 'hero', '--sheet', c.ring_sheet, '--cell', '16x16'] + RING_ARGS)
+    j, png = load_out(out, 'hero')
+    assert len(frame_list(j)) == 10
+    counts = [light_opaque(cell_of(j, png, i)) for i in range(10)]
+    assert all(n > 10 for n in counts), f'ring should still be there, light opaque px per frame: {counts}'
+    assert 'defringe' not in o, 'defringe summary printed although --defringe was not given'
+    return f'ring kept without --defringe: light opaque px per frame {min(counts)}..{max(counts)}'
+
+
+def t12(c):
+    marker = c.tmp / 'stub_ran_t12.txt'
+    stub = c.tmp / 'stub_aseprite_t12.cmd'
+    stub.write_text(f'@echo started> "{marker}"\r\n', encoding='ascii')
+    env = dict(os.environ, ASEPRITE_EXE=str(stub))
+    rc, out, err = run([c.tmp / 't12', '--name', 'x', '--sheet', c.ring_sheet, '--cell', '16x16', '--defringe', 300], env=env)
+    assert rc != 0, '--defringe 300 should fail'
+    assert '--defringe' in err, f'unexpected message: {err}'
+    assert not marker.exists(), 'Aseprite (the stub) was started before the --defringe error'
+    return f'exit {rc}, "{err.strip().splitlines()[0][:90]}", Aseprite stub never started'
+
+
+TESTS = [('T1', t1), ('T2', t2), ('T3', t3), ('T4', t4), ('T5', t5), ('T6', t6), ('T7', t7), ('T8', t8), ('T9', t9),
+         ('T10', t10), ('T11', t11), ('T12', t12)]
 
 
 def main():
@@ -304,6 +384,8 @@ def main():
     try:
         c.sheet = c.tmp / 'sheet.png'
         c.expected = make_sheet(c.sheet)
+        c.ring_sheet = c.tmp / 'ring_sheet.png'
+        c.ring_expected, c.ring_total = make_ring_sheet(c.ring_sheet)
         c.t1_opaque = None
         for name, fn in TESTS:
             try:

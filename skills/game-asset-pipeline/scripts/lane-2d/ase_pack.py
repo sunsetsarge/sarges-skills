@@ -30,6 +30,11 @@ Palette lock (the .aseprite is saved indexed, the exported PNG stays RGBA):
   the opaque-pixel count is checked before and after the lock.
 
 Other: --pivot bottom-center|center|X,Y adds one slice "anchor" over the whole cell.
+--defringe [N]   remove a light fringe (default N=180, 0..254; write it after the positional OUT_DIR):
+  per frame, after cutting and --key but before empty-cell detection, alpha thresholding and the palette
+  lock, every light pixel (alpha > 0 and min(R,G,B) > N) reachable from a transparent pixel through light
+  pixels (8-connected) becomes (0,0,0,0); light pixels enclosed by art (an eye glint) stay. Opt-in because
+  art whose own outline is light against transparency will lose that outline.
 Export: --sheet-type packed|rows|columns|horizontal|vertical, --padding N (default 1),
   --extrude, --trim (per frame; the engine must then apply spriteSourceSize),
   --json-format array|hash.
@@ -50,6 +55,7 @@ Examples:
 Python 3.10 + Pillow (C:\\AI-Shared\\python.exe on Blaine's machine).
 """
 import argparse, glob, json, os, re, shutil, subprocess, sys, tempfile
+from collections import deque
 from pathlib import Path
 from PIL import Image, ImageChops
 
@@ -183,6 +189,8 @@ def parse_args(argv):
     ap.add_argument('--dither', choices=DITHERS, default='none')
     ap.add_argument('--alpha-threshold', type=int, default=128)
     ap.add_argument('--pivot', help='bottom-center | center | X,Y')
+    ap.add_argument('--defringe', nargs='?', type=int, const=180, default=None, metavar='N',
+                    help='remove a light fringe around the art: light = min(R,G,B) > N (default 180, 0..254)')
     ap.add_argument('--sheet-type', choices=['packed', 'rows', 'columns', 'horizontal', 'vertical'], default='packed')
     ap.add_argument('--padding', type=int, default=1)
     ap.add_argument('--extrude', action='store_true')
@@ -222,6 +230,8 @@ def validate_args(a):
         raise Fail('--fps must be positive')
     if not 0 <= a.alpha_threshold <= 255:
         raise Fail('--alpha-threshold must be 0..255')
+    if a.defringe is not None and not 0 <= a.defringe <= 254:
+        raise Fail(f'--defringe N must be an integer 0..254, got {a.defringe}')
     if a.max_colors is not None and not 1 <= a.max_colors <= 255:
         raise Fail('--max-colors must be 1..255 (index 0 is reserved for transparency)')
     if a.dither != 'none' and not (a.palette or a.max_colors):
@@ -309,12 +319,44 @@ def resolve_key(spec, first_im, notes):
     return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
 
 
+def defringe_frame(im, n):
+    """Remove the light fringe from one RGBA frame -> (image, pixels removed).
+    Light = alpha > 0 and min(R,G,B) > n. Flood from every alpha-0 pixel (8-connectivity), entering only
+    light pixels; each one reached becomes (0,0,0,0) and is flooded from. Enclosed light pixels stay.
+    A frame with no transparent pixel is returned unchanged."""
+    w, h = im.size
+    data = list(im.getdata())
+    seeds = [i for i, p in enumerate(data) if p[3] == 0]
+    if not seeds:
+        return im, 0
+    light = bytearray(1 if p[3] > 0 and min(p[:3]) > n else 0 for p in data)
+    q = deque(seeds)
+    removed = 0
+    while q:
+        i = q.popleft()
+        x, y = i % w, i // w
+        for ny in range(max(0, y - 1), min(h, y + 2)):
+            for nx in range(max(0, x - 1), min(w, x + 2)):
+                j = ny * w + nx
+                if light[j]:
+                    light[j] = 0                      # entered: never enter twice
+                    data[j] = (0, 0, 0, 0)
+                    removed += 1
+                    q.append(j)
+    if not removed:
+        return im, 0
+    out = Image.new('RGBA', im.size)
+    out.putdata(data)
+    return out, removed
+
+
 def is_empty(im):
     return im.getchannel('A').getbbox() is None
 
 
 def load_frames(a, notes):
-    """-> (cells [RGBA images], row_of [sheet row per kept frame or None], rows, dropped, total)"""
+    """-> (cells [RGBA images], row_of [sheet row per kept frame or None], rows, dropped, total, defringed px)"""
+    removed = 0
     if a.sheet:
         if not os.path.isfile(a.sheet):
             raise Fail(f'sheet not found: {a.sheet}')
@@ -339,12 +381,15 @@ def load_frames(a, notes):
         for r in range(rows):
             for c in range(cols):
                 cell = sheet.crop((c * cw, r * ch, (c + 1) * cw, (r + 1) * ch))
+                if a.defringe is not None:
+                    cell, k = defringe_frame(cell, a.defringe)
+                    removed += k
                 if is_empty(cell) and not a.keep_empty:
                     dropped += 1
                     continue
                 cells.append(cell)
                 row_of.append(r)
-        return cells, row_of, rows, dropped, rows * cols
+        return cells, row_of, rows, dropped, rows * cols, removed
     # --frames
     if os.path.isdir(a.frames):
         paths = [str(p) for p in Path(a.frames).iterdir() if p.is_file() and p.suffix.lower() == '.png']
@@ -362,7 +407,11 @@ def load_frames(a, notes):
     key = resolve_key(a.key, ims[0], notes)
     if key is not None:
         ims = [key_out(im, key) for im in ims]
-    return ims, None, None, 0, len(ims)
+    if a.defringe is not None:
+        done = [defringe_frame(im, a.defringe) for im in ims]
+        ims = [im for im, _ in done]
+        removed = sum(k for _, k in done)
+    return ims, None, None, 0, len(ims), removed
 
 
 # ---------------------------------------------------------------- palette from art (--max-colors)
@@ -480,7 +529,7 @@ def pack(a):
         return 0
 
     notes = []
-    cells, row_of, nrows, dropped, total = load_frames(a, notes)
+    cells, row_of, nrows, dropped, total, defringed = load_frames(a, notes)
     n = len(cells)
     if n == 0:
         raise Fail('no frames left: every cell was empty (try --keep-empty or check --key)')
@@ -594,6 +643,8 @@ def pack(a):
         lock = f', palette locked ({len(stats["palette"])} entries, {stats["opaque_after"]} opaque px unchanged)'
     print(f'{n} frames kept, {dropped} dropped ({total} cells), cell {cw}x{ch}, tags: {tag_txt}, '
           f'{len(colours)} colours used{lock}')
+    if a.defringe is not None:
+        print(f'defringe: {defringed} px removed (threshold {a.defringe})')
     print(f'  {final["aseprite"]}\n  {final["png"]}\n  {final["json"]}')
     return 0
 

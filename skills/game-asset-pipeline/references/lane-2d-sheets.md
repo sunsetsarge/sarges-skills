@@ -188,6 +188,11 @@ Rules it enforces, each learned the hard way:
   spare transparent entry, and the opaque-pixel count is compared before and after.
 - **No per-frame trim by default.** `--trim` is opt-in and the engine must then apply
   `spriteSourceSize`, or the walk cycle jitters (spine rule 2).
+- **Generator halos come off with `--defringe`.** PixelLab drew a ragged white fringe on
+  10 of 14 frames of a black terrier (2026-11-15). `--defringe [N]` removes light pixels
+  (min channel above N, default 180) that connect to transparency and keeps enclosed ones
+  such as eye glints. Opt-in: art with a genuinely light outline would lose it. Write the
+  flag after `OUT_DIR`, or give it a number, so it does not swallow the folder name.
 - **It never touches the real Aseprite settings.** Each run uses a throwaway config
   folder (`ASEPRITE_USER_FOLDER`).
 
