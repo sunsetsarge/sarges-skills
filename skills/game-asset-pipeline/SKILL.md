@@ -139,6 +139,14 @@ Working code beats a description of working code. All paths relative to this ski
 | `split_render.py` | Split a fused GLB into base + part via bmesh centroid |
 | `inspect_bones.py`, `probe_hands.py` | Rig inspection; attaching props Meshy dropped |
 | `build_lcvp.py`, `build_lst.py` | Building a shape from Blender primitives when the generator refuses it |
+| `local_i23d.py` | **No-credit generator.** One picture → ~600k-triangle textured GLB through ComfyUI's built-in TRELLIS.2 nodes. Run with `C:\ComfyUI\.venv\Scripts\python.exe`; `--launch` starts ComfyUI headless. Needs the GPU to itself (4–8 min when it is free, 20 min shared, out of memory beside an Ollama model) |
+| `lowpoly_bake.py` | **Always run after `local_i23d.py`.** Its mesh is a thin double wall that tears under any simplifier; this rebuilds one solid skin (voxel remesh), collapses to a triangle budget and re-bakes base colour, metallic, roughness and normals. Blender headless, ~10 s |
+
+Local generation, measured 2026-11-16 on two subjects: a bright hard-surface prop (red and gold chest) came
+out clean and well coloured; a black dog on black (Blackpaw's Carson) matched Meshy's shape but had a clearly
+weaker texture. There is no rigging or animation. Use it for props and drafts; keep Meshy for hero
+characters and anything that must be rigged. Feed it a bright, evenly lit picture on a plain background.
+Evidence and settings: `Projects\Local_3D_Gen\RESULTS.md`.
 
 ## Environment on this machine
 
